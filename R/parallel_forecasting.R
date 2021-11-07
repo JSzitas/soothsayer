@@ -34,8 +34,8 @@ forecast2 <- function (object, new_data = NULL, h = NULL, point_forecast = list(
   res <- furrr::future_map( res, function(model_row){
     fabletools::forecast( object = fabletools::as_mable(model_row,
                                           key = "key",
-                                          model = mdls),
-                        new_data = model_row[["new_data"]],
+                                          model = tidyselect::all_of(mdls)),
+                        new_data = object[["new_data"]],
                         h = h,
                         point_forecast = point_forecast, ... )
   }) %>%

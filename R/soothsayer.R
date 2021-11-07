@@ -1,27 +1,91 @@
 
-
-# series is some time series object (maybe tsibble), soothsayer is the model
-yield_model <- function( series, soothsayer ) {
-
-  # pass a string vs pass a model directly? alternatively form a model object here -
-  # though that could get messy
-  model <- "ar"
-
-  return(model)
+oracle_random <- function( ... ) {
+  exprs <- rlang::dots_list(...)
+  sample( exprs, 1)
 }
 
-# this is a function which generates a soothsayer - either a closure, an S3 or an R6
-# thing that can determine what to do with a series.
-# hallucination allows us to generate more data from the samples, and enhance the soothsayer that way
-soothsayer <- function( training_data,
-                        features,
-                        base_model = ranger::ranger,
-                        hallucinate ) {
+train_soothsayer <- function(.data, specials, ...) {
+  # Extract a vector of response data
 
-  # calculate features from training data
-  # calculate all models
-  # generate an out of sample forecast,
-  # calculate desired metric
+  feature_set <- specials$feature_set
+  feature_df <- compute_features(.data, feature_set)
 
-  NULL
+  rules <- specials$ruleset
+  if( !is.null(rules) ) {
+    fit_rules <- dplyr::transmute( feature_df, !!!rules )
+  }
+
+  # fit_rules <- dplyr::mutate( !!! )
+
+
+  # Create S3 model object
+  # It should be small, but contain everything needed for methods below
+  structure(
+    list(specials),
+    class = "model_soothsayer"
+  )
 }
+
+specials_soothsayer <- fabletools::new_specials(
+  ruleset = function(rules = NULL) {
+    if(is.null(ruleset)) return(NULL)
+    rlang::enexprs(rules)
+  },
+  oracle = function(...,
+                    fitted_oracle = oracle_random,
+                    certainty = 0.1,
+                    mix = FALSE ) {
+    models <- rlang::dots_list(...)
+
+    fitted_oracle(models)
+  },
+  feature_set = function( features = soothsayer_features_set  ) {
+    features
+  },
+  xreg = function(...) {
+    # This model doesn't support exogenous regressors, time to error.
+    stop("Exogenous regressors aren't supported by `soothsayer()`")
+  },
+  .required_specials = NULL
+)
+
+#' Soothsayer model
+#'
+#' Add the rest of your documentation here.
+#' Typically this includes a "Specials" section
+#'
+#' @export
+soothsayer <- function(formula, ...) {
+  # Create a model class which combines the training method, specials, and data checks
+  model_soothsayer <- fabletools::new_model_class("soothsayer",
+    # The training method (more on this later)
+    train = train_soothsayer,
+    # The formula specials (the next section)
+    specials = specials_soothsayer,
+    # Any checks of the unprocessed data, like gaps, ordered, regular, etc.
+    check = function(.data) {
+      if (!tsibble::is_regular(.data)) stop("Data must be regular")
+    }
+  )
+  # Return a model definition which stores the user's model specification
+  fabletools::new_model_definition(model_soothsayer, {{ formula }}, ...)
+}
+
+soothsayer_model <-
+  soothsayer(Value ~ rule(.period > 12 -> AR) +
+    rule(.length < 50 -> ETS) +
+      # alternatively just
+      # rules( .period > 12 -> AR,
+      #        .length < 50 -> ETS )
+      # for readability?
+    oracle(ETS, AR, ARIMA,
+      fitted_oracle = some_oracle,
+      certainty = 0.1,
+      mix = FALSE
+    ))
+
+ex_data <- tsibble::tsibble( data.frame(Value = c(1:10), id = 1:10), index = "id")
+
+fabletools::model( ex_data,
+                   soothsayer(Value~ ruleset(AR = .length > 12))) -> fitted
+

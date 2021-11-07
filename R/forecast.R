@@ -9,22 +9,22 @@ min_len_forecast_h <- function( x, min_h = 4 ) {
   # use sample weights which are like, chisq or smth distributed
   sample( forecast_h, size = 1)
 }
-future::plan("multisession")
 
+mult_theta <- function( formula, ... ) {
+  form <- ~ season( method = c("multiplicative"))
+  rlang::f_lhs(form) <- rlang::enexpr( formula )
+  fable::THETA( !!form )
+}
+add_theta <- function( formula, ... ) {
+  form <- ~ season( method = c("additive"))
+  rlang::f_lhs(form) <- rlang::enexpr( formula )
+  fable::THETA( !!form )
+}
 
-find_best_forecast <- function( ts_tbl,
-                                models = list( #fable::ARIMA,
-                                               # fable::THETA,
-                                               # fable::ETS,
-                                               # fable::NNETAR,
-                                               # fable::CROSTON,
-                                               # fable::SNAIVE,
-                                               fable::AR),
-                                values_from = "value",
-                                forecast_h = min_len_forecast_h,
-                                ... ) {
-
-  model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from) )  )
+ts_train_test <- function( ts_tbl,
+                           values_from = "value",
+                           forecast_h = random_forecast_h,
+                           ... ) {
 
   series <- ts_tbl %>%
     as.data.frame() %>%
@@ -50,15 +50,27 @@ find_best_forecast <- function( ts_tbl,
                          tsibble::build_tsibble(index = "index", key = "key")) %>%
     dplyr::bind_rows()
 
-  # series <- series %>%
-  #   dplyr::bind_rows()
+  test <- purrr::map( seq_len( length(series)),
+                                 ~ dplyr::filter( series[[.x]],
+                                                  index > max(index) - forecast_h[[.x]]  ) %>%
+                                   tsibble::build_tsibble(index = "index", key = "key")) %>%
+    dplyr::bind_rows()
 
-  res <- train %>%
-    fabletools::model( !!! model_set ) #%>%
-    # fabletools::forecast( new_data = ts_tbl, times = 0 )
-
-  return(list( train, ts_tbl, res))
+  return(list( train = train, test = test, values_from = values_from))
 }
 
-# forecasts <- forecast2( models[[3]], new_data = models[[2]]  )
+fit_models <- function( train,
+                        models = list( ar = fable::AR),
+                        values_from = "value") {
+  model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from) )  )
 
+  mdls <- train %>%
+    fabletools::model( !!!model_set, .safely = TRUE )
+  return( list( models = mdls))
+}
+
+forecast_models <- function( test,
+                             fitted_models ) {
+  fcst <- fabletools::forecast( fitted_models, new_data = test, times = 0 )
+  return( list( forecasts = fcst) )
+}
