@@ -1,0 +1,64 @@
+---
+title: "fit_forecasts"
+author: "Juraj Szitás"
+date: "11/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fit forecasts
+
+```{r}
+source("../R/forecast.R")
+library(magrittr)
+
+experiment_gen <- coro::generator(function() {
+  x <- 1
+  while(TRUE) {
+    coro::yield(x)
+    x <- x + 1
+  }
+})
+experiment_n <- experiment_gen()
+experiment_run <- experiment_n()
+
+part <- 2
+
+M_all_part <- qs::qread(paste0("../data/M_all_",part,".qs"))
+
+ts_train_test(M_all_part) -> train_test
+
+future::plan("multisession")
+
+models <- fit_models( train = train_test[["train"]],
+            models = list( arima = fable::ARIMA,
+                           fable::SNAIVE,
+                           fable::RW,
+                           theta = fable::THETA,
+                           ets = fable::ETS,
+                           nnetar = fable::NNETAR,
+                           croston = fable::CROSTON,
+                           ar = fable::AR))
+
+qs::qsave( models, file = paste0( "models_",part,"_", Sys.Date(),
+                                      "_",
+                                      experiment_run, ".qs" ),
+           nthreads = 12)
+
+forecast_models( train_test[["test"]], models[["models"]] ) -> forecasts
+qs::qsave( forecasts, file = paste0( "forecasts_",part,"_", Sys.Date(),
+                                  "_",
+                                  experiment_run, ".qs" ),
+           nthreads = 12)
+
+accuracies <- fabletools::accuracy(forecasts[["forecasts"]], train_test[["test"]])
+
+qs::qsave( accuracies, file = paste0( "accuracies_",part,"_", Sys.Date(),
+                                     "_",
+                                     experiment_run, ".qs" ),
+           nthreads = 12)
+
+```

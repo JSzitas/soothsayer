@@ -1,0 +1,33 @@
+---
+title: "explore_accuracies"
+author: "Juraj Szitás"
+date: "10/30/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Forecast accuracies
+
+This explores the accuracies recovered from the forecasts. 
+
+
+```{r}
+qs::qread( "experiments/accuracies_1_2021-10-25_1.qs" ) -> accuracies1
+qs::qread( "experiments/accuracies_2_2021-10-25_1.qs" ) -> accuracies2
+
+
+accuracies <- dplyr::bind_rows(accuracies1, accuracies2)
+```
+
+Accuracy corrplot:
+
+```{r}
+dplyr::select_if(accuracies, is.double) %>%
+  dplyr::select_if( ~!all(is.nan(.x)) ) %>%
+  dplyr::filter( dplyr::across( dplyr::everything(), ~!is.infinite(.x)) ) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  corrplot::corrplot()
+```
