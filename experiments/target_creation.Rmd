@@ -2,7 +2,13 @@
 title: "target_creation"
 author: "Juraj Szitás"
 date: "11/1/2021"
-output: html_document
+output:
+  pdf_document:
+    latex_engine: pdflatex
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
@@ -114,7 +120,7 @@ Pretty, but not super readable - what about top 20?
 ```{r}
 df %>%
   dplyr::arrange(dplyr::desc(var_imp)) %>% 
-  .[1:20,] %>% 
+  .[1:30,] %>% 
   ggplot2::ggplot( ggplot2::aes( x = reorder(var,var_imp),
                                  y = var_imp,
                                  fill = var_imp )
@@ -126,7 +132,7 @@ df %>%
       ggplot2::scale_fill_gradient(low="red", high="blue")
 
 ```
-Interesting. TODO: Elaborate.
+Interesting. Most of these are either features from **feasts** or from **Catch22**. 
 
 ```{r}
 preds <- predict(soothsayer_model, soothsayer_test %>%
@@ -261,6 +267,21 @@ bad <- performance_vs_best_model %>%
   knitr::kable(bad)
 ```
 
+What are the scales for the series where we fail? 
+
+
+```{r}
+ordered <- performance_vs_best_model %>% 
+  dplyr::filter( ratio < 0.8  ) %>% 
+  dplyr::select( key, RMSE, selected_RMSE, ratio ) %>% 
+  dplyr::arrange( dplyr::desc(selected_RMSE) )
+  knitr::kable(ordered)
+```
+
+How many series are we looking at? `r nrow(dplyr::filter( performance_vs_best_model, ratio < 0.8))  `
+
+What the heck happened with series `r ordered[1, "key"] `? Perhaps it makes sense to try to explain the discrepancies.
+
 About `r bad$picked_bad*100`% of the time - unfortunate. Just how bad are these picks, and where do they tend to cluster? 
 ```{r}
 
@@ -270,7 +291,43 @@ performance_vs_best_model %>%
   ggplot2::geom_histogram()
 ```
 
-TODO: We need to look a bit deeper into the cases where we fail.
+Can we possibly model the ratios based on the features? 
+
+```{r}
+ratio_model <- performance_vs_best_model %>% 
+  dplyr::select( key, ratio ) %>% 
+  dplyr::left_join(feature_df, by = c("key" = "keys")) %>% 
+  dplyr::select( - c("key")) %>% 
+  dplyr::select_if(~ !all(is.na(.x))) %>%
+  dplyr::select_if(~ !all(.x == .x[1])) %>% 
+  na.omit
+
+ratio_importances <- ranger::ranger( y = dplyr::select(ratio_model, ratio) %>% unlist, 
+                                     x = dplyr::select(ratio_model, -ratio) %>% as.matrix,
+                                     num.trees = 2000,
+                                     importance = 'impurity_corrected'
+                                    )
+variable_importances <- ratio_importances[["variable.importance"]]
+# rescale so they sum to 100
+variable_importances <- (variable_importances/sum(variable_importances)) * 100
+df <- data.frame( var_imp = variable_importances, var = names(variable_importances) ) 
+
+ggplot2::ggplot(df, ggplot2::aes( x = reorder(var,var_imp),
+                                  y = var_imp,
+                                  fill = var_imp )
+                ) +  
+      ggplot2::geom_bar(stat="identity", position="dodge") +
+      ggplot2::coord_flip()+
+      ggplot2::ylab("Variable Importance")+
+      ggplot2::xlab("")+
+      ggplot2::scale_fill_gradient(low="red", high="blue")
+
+```
+Huh, so perhaps we can learn more from the data (seeing that the variable importances dont seem to be random).
+
+
+
+
 
 # TODO: 
 # Podium counts: (3 best methods get re-sampled probabilistically)
