@@ -1,52 +1,60 @@
 
-oracle_random <- function( ... ) {
+oracle_random <- function(...) {
   exprs <- rlang::dots_list(...)
-  sample( exprs, 1)
+  sample(exprs, 1)
 }
 
 train_soothsayer <- function(.data, specials, ...) {
-  # Extract a vector of response data
 
-  feature_set <- specials$feature_set
-  feature_df <- compute_features(.data, feature_set)
+  feature_set <- specials$feature_set[[1]]
+  target <- tsibble::measured_vars(.data)
+  feature_df <- compute_features(.data, feature_set, values_from = target)
 
-  rules <- specials$ruleset
+  rules <- specials$rules[[1]]
+
+  rule_models <- purrr::map(rules, rlang::f_lhs)
+  rule_rhs <- purrr::map(rules, rlang::f_rhs)
+
   if( !is.null(rules) ) {
-    fit_rules <- dplyr::transmute( feature_df, !!!rules )
+    fit_rules <- dplyr::transmute( feature_df, !!!rule_rhs )
+    colnames(fit_rules) <- rlang::eval_bare(rule_models)
   }
-
-  # fit_rules <- dplyr::mutate( !!! )
-
+  # return(fit_rules)
 
   # Create S3 model object
   # It should be small, but contain everything needed for methods below
   structure(
-    list(specials),
+    list( features = feature_df,
+          rules = fit_rules ),
     class = "model_soothsayer"
   )
 }
 
 specials_soothsayer <- fabletools::new_specials(
-  ruleset = function(rules = NULL) {
-    if(is.null(ruleset)) return(NULL)
-    rlang::enexprs(rules)
+  rules = function(...) {
+    rules <- rlang::dots_list(...)
+    if (is.null(rules)) {
+      return(NULL)
+    }
+    return(rules)
   },
   oracle = function(...,
                     fitted_oracle = oracle_random,
                     certainty = 0.1,
-                    mix = FALSE ) {
-    models <- rlang::dots_list(...)
-
-    fitted_oracle(models)
+                    mix = FALSE) {
+    # models <- rlang::dots_list(...)
+    #
+    # fitted_oracle(models)
   },
-  feature_set = function( features = soothsayer_features_set  ) {
+  feature_set = function(features = NULL) {
+    if( is.null(features) ) return(soothsayer_feature_set)
     features
   },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
     stop("Exogenous regressors aren't supported by `soothsayer()`")
   },
-  .required_specials = NULL
+  .required_specials = c("feature_set")
 )
 
 #' Soothsayer model
@@ -72,20 +80,33 @@ soothsayer <- function(formula, ...) {
 }
 
 soothsayer_model <-
-  soothsayer(Value ~ rule(.period > 12 -> AR) +
-    rule(.length < 50 -> ETS) +
-      # alternatively just
-      # rules( .period > 12 -> AR,
-      #        .length < 50 -> ETS )
-      # for readability?
+  soothsayer(Value ~ # rule(.period > 12 -> AR) +
+  # rule(.length < 50 -> ETS) +
+  # alternatively just
+  rules(
+    AR ~ .period > 12,
+    ETS ~ .length < 50
+  ) +
+    # for readability?
     oracle(ETS, AR, ARIMA,
       fitted_oracle = some_oracle,
       certainty = 0.1,
       mix = FALSE
     ))
 
-ex_data <- tsibble::tsibble( data.frame(Value = c(1:10), id = 1:10), index = "id")
+ex_data <- tsibbledata::aus_livestock %>%
+  as.data.frame() %>%
+  dplyr::group_by(Month) %>%
+  dplyr::summarise(count = sum(Count)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(key = "aggreg") %>%
+  tsibble::as_tsibble(index = "Month", key = "key")
 
-fabletools::model( ex_data,
-                   soothsayer(Value~ ruleset(AR = .length > 12))) -> fitted
 
+fabletools::model(
+  ex_data,
+  soothsayer(count ~ rules(
+    AR ~ .length > 12,
+    ETS ~ .period < 12
+  ))
+) -> fitted

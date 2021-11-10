@@ -26,6 +26,7 @@ soothsayer_feature_set <- list( entropy,
                                 count,
                                 tslength,
                                 period,
+                                boxcox_lambda,
                                 catch22_feat
 )
 
@@ -42,23 +43,30 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
                              function(.f) .f( .x[[values_from]] ))
     unlist(.features)
   }
+  if( length(tsibble::key_vars(x)) != 0) {
+    features <- x %>%
+      as.data.frame() %>%
+      dplyr::group_by( !!!tsibble::key(x) ) %>%
+      dplyr::group_split()
 
-  features <- x %>%
-    as.data.frame() %>%
-    dplyr::group_by( !!!tsibble::key(x) ) %>%
-    dplyr::group_split()
+    keys <- x %>%
+      as.data.frame() %>%
+      dplyr::select(!!!tsibble::key(x)) %>%
+      unlist %>%
+      unique()
 
-  keys <- x %>%
-    as.data.frame() %>%
-    dplyr::select(!!!tsibble::key(x)) %>%
-    unlist %>%
-    unique()
+    features <- suppressWarnings({
+      features %>%
+        furrr::future_map( transformer ) %>%
+        dplyr::bind_rows()
+    })
 
-  features <- suppressWarnings({
-    features %>%
-    furrr::future_map( transformer ) %>%
-    dplyr::bind_rows()
-  })
+    return(cbind(keys, features))
+  }
+  features <- transformer(as.data.frame(x))
+  feature_names <- names(features)
 
-  return(cbind(keys, features))
+  features <- as.data.frame(matrix( transformer(as.data.frame(x)), nrow = 1))
+  colnames(features) <- feature_names
+  return(features)
 }

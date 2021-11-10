@@ -251,3 +251,26 @@ period <- function(x)
 tslength <- function(x){
   c(.length = length(x))
 }
+# use guerreros algorithm to find best lambda
+boxcox_lambda <- function( x, lower = -0.9, upper = 2, .period = 2L ) {
+  # taken from feasts
+  lambda_coef_var <- function (lambda, x, .period = 2)
+  {
+    if (all(x == x[1]))
+      return(1)
+    x <- split(x, (seq_along(x) - 1)%/%.period)
+    mu_h <- purrr::map_dbl(x, mean, na.rm = TRUE)
+    sig_h <- purrr::map_dbl(x, sd, na.rm = TRUE)
+    rat <- sig_h/mu_h^(1 - lambda)
+    sd(rat, na.rm = TRUE)/mean(rat, na.rm = TRUE)
+  }
+  c(.boxcox_lambda_guerrero = optimise(
+    lambda_coef_var,
+    c(lower, upper),
+    x = x,
+    .period = max(.period, 2))$minimum)
+}
+
+
+
+
