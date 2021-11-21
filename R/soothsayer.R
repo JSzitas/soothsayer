@@ -1,10 +1,8 @@
-
-oracle_random <- function(...) {
-  exprs <- rlang::dots_list(...)
-  sample(exprs, 1)
-}
-
-
+#' Soothsayer model aliases
+#'
+#' @description A set of soothsayer model aliases (for purposes of matching).
+#' @rdname soothsayer_model_aliases
+#' @export
 soothsayer_alias_set <- list( "fable::AR" = fable::AR,
                               "AR" = fable::AR,
                               "ar" = fable::AR,
@@ -43,24 +41,24 @@ soothsayer_alias_set <- list( "fable::AR" = fable::AR,
                               "var" = fable::VAR
                               )
 
-
-
 train_soothsayer <- function(.data, specials, ...) {
 
   feature_set <- specials$feature_set[[1]]
+
   target <- tsibble::measured_vars(.data)
   feature_df <- compute_features(.data, feature_set, values_from = target)
 
   aliases <- specials$model_aliases[[1]]
-  # return(aliases)
   rules <- specials$rules[[1]]
+  oracle <- specials$oracle[[1]]
 
   rule_models <- purrr::map(rules, rlang::f_lhs)
   rule_rhs <- purrr::map(rules, rlang::f_rhs)
 
   if( !is.null(rules) ) {
-    fit_rules <- dplyr::transmute( feature_df, !!!rule_rhs )
-    colnames(fit_rules) <- rlang::eval_bare(rule_models)
+    fit_rules <- purrr::map( rule_rhs,
+                             ~ rlang::eval_tidy( .x, data = feature_df))
+    names(fit_rules) <- rlang::eval_bare(rule_models)
     matched_models <- unlist(fit_rules)
     matched_models <- names(matched_models[ which(matched_models) ])
     models_to_fit <- aliases[ matched_models ]
@@ -70,19 +68,10 @@ train_soothsayer <- function(.data, specials, ...) {
 
   model_fits <- fabletools::model(.data,
                                   !!!model_defs, .safely = TRUE)
-
-
-  return(model_fits)
-
-
-
-
-
-  # Create S3 model object
-  # It should be small, but contain everything needed for methods below
   structure(
     list( features = feature_df,
-          rules = fit_rules ),
+          rules = fit_rules,
+          models = model_fits ),
     class = "model_soothsayer"
   )
 }
@@ -104,7 +93,7 @@ specials_soothsayer <- fabletools::new_specials(
     # fitted_oracle(models)
   },
   model_aliases = function( aliases = soothsayer_alias_set ) {
-    if( is.null(aliases) ) return( oothsayer_alias_set )
+    if( is.null(aliases) ) return( soothsayer_alias_set )
     aliases
   },
   feature_set = function(features = NULL) {
@@ -113,16 +102,30 @@ specials_soothsayer <- fabletools::new_specials(
   },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
-    # stop("Exogenous regressors aren't supported by `soothsayer()`")
+    stop("Exogenous regressors aren't supported by `soothsayer()`")
   },
   .required_specials = c("feature_set", "model_aliases")
 )
 
+generate.soothsayer <- function( object,
+                                 new_data) {
+
+}
+
+forecast.soothsayer <- function( object,
+                                 new_data,
+                                 bootstrap = FALSE, # enable lists here
+                                 times = 100, # and here?
+                                 ... ) {
+
+}
 #' Soothsayer model
 #'
-#' Add the rest of your documentation here.
-#' Typically this includes a "Specials" section
-#'
+#' @description The main function of soothsayer - creates soothsayer models trainable and usable within fable and fabletools.
+#' @param formula A soothsayer model formula (see details).
+#' @param ... Additional arguments (see details).
+#' @return A soothsayer model, analogous to other model objects within fable/fabletools.
+#' @note Maybe some other day.
 #' @export
 soothsayer <- function(formula, ...) {
   # Create a model class which combines the training method, specials, and data checks
@@ -139,36 +142,3 @@ soothsayer <- function(formula, ...) {
   # Return a model definition which stores the user's model specification
   fabletools::new_model_definition(model_soothsayer, !!rlang::enquo(formula), ...)
 }
-
-soothsayer_model <-
-  soothsayer(Value ~ # rule(.period > 12 -> AR) +
-  # rule(.length < 50 -> ETS) +
-  # alternatively just
-  rules(
-    AR ~ .period > 12,
-    ETS ~ .length < 50
-  ) +
-    # for readability?
-    oracle(ETS, AR, ARIMA,
-      fitted_oracle = some_oracle,
-      certainty = 0.1,
-      mix = FALSE
-    ) +
-    model_aliases(NULL) )
-
-ex_data <- tsibbledata::aus_livestock %>%
-  as.data.frame() %>%
-  dplyr::group_by(Month) %>%
-  dplyr::summarise(count = sum(Count)) %>%
-  dplyr::ungroup() %>%
-  # dplyr::mutate(key = "aggreg") %>%
-  tsibble::as_tsibble(index = "Month")#, key = "key")
-
-
-fabletools::model(
-  ex_data,
-  soothsayer(count ~ rules(
-    AR ~ .length > 12,
-    ETS ~ .period < 12
-  ))
-) -> fitted
