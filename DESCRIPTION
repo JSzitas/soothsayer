@@ -1,13 +1,32 @@
 Package: soothsayer
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Title: Tidy Time Series Forecast Model Selection
+Version: 0.2.1
+Author: Juraj Szitas
+Maintainer: Juraj Szitas <szitas.juraj13@gmail.com>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends: 
     R (>= 2.10)
+Imports: 
+    tsibble,
+    dplyr,
+    furrr,
+    purrr,
+    stats,
+    tseries,
+    fracdiff,
+    urca,
+    Rcatch22,
+    rlang,
+    magrittr,
+    slider,
+    fable,
+    fabletools,
+    fs,
+    qs,
+    generics
+RoxygenNote: 7.1.2

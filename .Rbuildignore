@@ -1,3 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
+^experiments$
+^nonstandard_data$
+^LICENSE\.md$
