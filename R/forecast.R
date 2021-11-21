@@ -1,68 +1,66 @@
-
+#' Soothsayer oracle training utilities
+#' @description Utilities for training oracle models
+#' @param x The time series (a sorted data.frame, or a tsibble).
+#' @param min_h The minimal length of the forecast
+#' @param max_h The maximal length of the forecast
+#' @param ... Not implemented.
+#' @return A random forecast length, sampled uniformly between **min_h** and **max_h**.
+#' @rdname oracle_utils
+#' @export
 random_forecast_h <- function( x, min_h = 4, max_h = 12, ... ) {
-  forecast_h <- min_h:max( min( length(x/2), max_h ), min_h)
-  # use sample weights which are like, chisq or smth distributed
-  sample( forecast_h, size = 1)
-}
-min_len_forecast_h <- function( x, min_h = 4 ) {
-  forecast_h <- min_h:max( ceiling(length(x)*0.2), min_h )
-  # use sample weights which are like, chisq or smth distributed
-  sample( forecast_h, size = 1)
+  h <- min_h:max( min( nrow(x)/2, max_h ), min_h)
+  # consider sample weights?
+  dplyr::mutate( x, forecast_h = sample( h, size = 1))
 }
 
-mult_theta <- function( formula, ... ) {
-  form <- ~ season( method = c("multiplicative"))
-  rlang::f_lhs(form) <- rlang::enexpr( formula )
-  fable::THETA( !!form )
-}
-add_theta <- function( formula, ... ) {
-  form <- ~ season( method = c("additive"))
-  rlang::f_lhs(form) <- rlang::enexpr( formula )
-  fable::THETA( !!form )
+handle_forecast_h <- function( x, forecast_h ) {
+  if( is.function(forecast_h)) {
+    result <- forecast_h(x)
+  }
+  else if( is.numeric(forecast_h) ) {
+    result <- dplyr::mutate( x, forecast_h = forecast_h)
+  }
+  else {
+    rlang::abort("forecast_h must be a function, or an integer value of type numeric.")
+  }
+  return(result)
 }
 
 ts_train_test <- function( ts_tbl,
-                           values_from = "value",
                            forecast_h = random_forecast_h,
                            ... ) {
 
+  time_index <- tsibble::index_var( ts_tbl )
+  key_var <- tsibble::key_vars(ts_tbl)
+
   series <- ts_tbl %>%
-    as.data.frame() %>%
-    dplyr::group_by(!!!tsibble::key(ts_tbl)) %>%
-    dplyr::group_split()
+    tsibble::as_tibble() %>%
+    dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
+    dplyr::group_split() %>%
+    purrr::map( ~ handle_forecast_h(.x, forecast_h)  ) %>%
+    dplyr::bind_rows() %>%
+    dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
+    dplyr::mutate( train = index < max( index) - forecast_h + 1) %>%
+    dplyr::select( -tidyselect::all_of(c("forecast_h", "period")) ) %>%
+    dplyr::as_tibble() %>%
+    tsibble::as_tsibble( index = time_index, key = key_var )
 
-  unique_keys <- ts_tbl %>%
-    as.data.frame() %>%
-    dplyr::select( tsibble::key_vars(ts_tbl)) %>%
-    dplyr::distinct() %>%
-    unlist()
+  train <- series %>%
+    dplyr::filter( train ) %>%
+    dplyr::select( -tidyselect::all_of( "train" ) )
 
-  if( is.function(forecast_h)) {
-    forecast_h <- purrr::map_int( series, ~ forecast_h( .x[[values_from]] ) )
-  }
-  else{
-    forecast_h <- rep(forecast_h, length(series))
-  }
+  test <- series %>%
+    dplyr::filter( !train ) %>%
+    dplyr::select( -tidyselect::all_of( "train" ) )
 
-  train <- purrr::map( seq_len( length(series)),
-                       ~ dplyr::filter( series[[.x]],
-                                        index < max(index) - forecast_h[[.x]] + 1 ) %>%
-                         tsibble::build_tsibble(index = "index", key = "key")) %>%
-    dplyr::bind_rows()
-
-  test <- purrr::map( seq_len( length(series)),
-                                 ~ dplyr::filter( series[[.x]],
-                                                  index > max(index) - forecast_h[[.x]]  ) %>%
-                                   tsibble::build_tsibble(index = "index", key = "key")) %>%
-    dplyr::bind_rows()
-
-  return(list( train = train, test = test, values_from = values_from))
+  return(list( train = train, test = test ))
 }
 
 fit_models <- function( train,
-                        models = list( ar = fable::AR),
-                        values_from = "value") {
-  model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from) )  )
+                        models = list( ar = fable::AR)) {
+
+  values_from <- tsibble::measured_vars(train)
+  model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from))  )
 
   mdls <- train %>%
     fabletools::model( !!!model_set, .safely = TRUE )
@@ -73,4 +71,74 @@ forecast_models <- function( test,
                              fitted_models ) {
   fcst <- fabletools::forecast( fitted_models, new_data = test, times = 0 )
   return( list( forecasts = fcst) )
+}
+#' Soothsayer oracle training utilities
+#' @description Utilities for training oracle models
+#' @param series The series to use for modelling, a \link[tsibble]{tsibble}. Note that this must only have a
+#' single measure variable.
+#' @param models A named list of fable compatible model functions, such as \link[fable]{ARIMA}.
+#' This must be a function which returns a valid fable model definition, preferably generated by
+#' \link[fabletools]{new_model_definition}
+#' @param forecast_h The forecast length h, either an integer, or a function which can return one,
+#' possibly based on the underlying time series. For example, see \link[soothsayer]{random_forecast_h}.
+#' @param save_forecast_experiment Whether to save the forecasting experiment, by default **TRUE**, and uses
+#' quicksave (see \link[qs]{qsave})
+#' @param save_outfile An optional argument to add an identifier to the saved objects.
+#' @param save_folder The folder to save the objects to.
+#' @param save_n_threads The number of threads to use when saving objects, see documentation for \link[qs]{qsave}.
+#' @return A list with fitted models, generated forecasts and computed forecast accuracies.
+#' @rdname oracle_utils
+#' @export
+soothsayer_forecaster <- function( series,
+                                   models = list( arima = fable::ARIMA,
+                                                  snaive = fable::SNAIVE,
+                                                  rw = fable::RW,
+                                                  theta = fable::THETA,
+                                                  ets = fable::ETS,
+                                                  nnetar = fable::NNETAR,
+                                                  croston = fable::CROSTON,
+                                                  ar = fable::AR),
+                                   forecast_h = random_forecast_h,
+                                   save_forecast_experiment = TRUE,
+                                   save_outfile = "1",
+                                   save_folder = paste0("experiment_",
+                                                        Sys.Date()
+                                                        ),
+                                   save_n_threads = 12)
+{
+  train_test <- ts_train_test( series,
+                               forecast_h = forecast_h )
+
+  models <- fit_models( train = train_test[["train"]],
+                        models = models )
+  if( save_forecast_experiment ) {
+    fs::dir_create(save_folder)
+    fs::dir_create(paste0(save_folder,"/models"))
+
+    qs::qsave( models, file = paste0( save_folder,"/models/models_",
+                                      save_outfile,".qs" ),
+                 nthreads = save_n_threads)
+  }
+
+  forecasts <- forecast_models( train_test[["test"]], models[["models"]] )
+  if( save_forecast_experiment ) {
+    fs::dir_create(paste0(save_folder,"/forecasts"))
+    qs::qsave( forecasts, file = paste0( save_folder,"/forecasts/forecasts_",
+                                         save_outfile,".qs" ),
+                 nthreads = save_n_threads)
+  }
+  accuracies <- fabletools::accuracy(forecasts[["forecasts"]],
+                                     train_test[["test"]])
+
+  if( save_forecast_experiment ) {
+    fs::dir_create(paste0(save_folder,"/accuracies"))
+    qs::qsave( accuracies, file = paste0( save_folder,
+                                          "/accuracies/accuracies_",
+                                          save_outfile,".qs" ),
+                 nthreads = save_n_threads)
+  }
+
+  return(list( models = models,
+               forecasts = forecasts,
+               accuracies = accuracies ))
 }
