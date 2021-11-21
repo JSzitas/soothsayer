@@ -279,7 +279,6 @@ ordered <- performance_vs_best_model %>%
 ```
 
 How many series are we looking at? `r nrow(dplyr::filter( performance_vs_best_model, ratio < 0.8))  `
-
 What the heck happened with series `r ordered[1, "key"] `? Perhaps it makes sense to try to explain the discrepancies.
 
 About `r bad$picked_bad*100`% of the time - unfortunate. Just how bad are these picks, and where do they tend to cluster? 
@@ -323,22 +322,117 @@ ggplot2::ggplot(df, ggplot2::aes( x = reorder(var,var_imp),
       ggplot2::scale_fill_gradient(low="red", high="blue")
 
 ```
-Huh, so perhaps we can learn more from the data (seeing that the variable importances dont seem to be random).
-
-
-
-
-
-# TODO: 
-# Podium counts: (3 best methods get re-sampled probabilistically)
+Huh, so perhaps we can learn more from the data (seeing that the variable importances do not seem to be random).
+Are there any anomalies in our data? 
 
 ```{r}
-podium_counts <- accuracy_ranks %>% 
-  dplyr::group_by(key) %>% 
-  dplyr::arrange( avg_rank ) %>% 
-  dplyr::slice_head(n = 3) %>% 
-  dplyr::select(.model, key) %>% 
-  dplyr::ungroup()
+
+isolation <- isotree::isolation.forest(data = feature_df %>% dplyr::select(-keys), sample_size = 256, ntrees = 1000)
+
+iso_preds <- isotree::predict.isolation_forest(isolation, feature_df)
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Learning to rank methods
+
+Can we just gradient boost this problem away, using all of the methods and all of the data? 
+
+```{r}
+soothsayer_data <- accuracies %>% 
+  dplyr::select( key, .model, RMSE )%>%
+  dplyr::full_join(feature_df, by = c("key" = "keys")) %>%
+  dplyr::select_if(~ !all(is.na(.x))) %>%
+  dplyr::select_if(~ !all(.x == .x[1])) %>%
+  tidyr::drop_na() %>% 
+# sample entire groups to avoid bias 
+  dplyr::group_by(key) %>% 
+  dplyr::mutate( sample_type = sample(c("train", "test"),
+                                      1,
+                                      replace = TRUE,
+                                      prob = c(0.7, 0.3)
+                                      )) %>% 
+  dplyr::mutate( rank = 1/(RMSE/sum(RMSE))) %>% #/sum(RMSE)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-RMSE) %>% 
+  dplyr::relocate(rank, .before = .model) %>% 
+  dplyr::mutate( key = factor(key, levels = unique(key))) %>% 
+  dplyr::mutate( key = as.integer(key))
+
+soothsayer_train <- soothsayer_data %>% 
+  dplyr::filter( sample_type == "train" ) %>% 
+  dplyr::select(-sample_type)
+soothsayer_test <- soothsayer_data %>% 
+  dplyr::filter( sample_type == "test") %>% 
+  dplyr::select(-sample_type)
+
+
+soothsayer_model_gbm <- gbm::gbm( rank ~.-.model,
+                                  data = soothsayer_train,
+                                  distribution = list( name = "pairwise", group = "key", metric = "conc" ),
+                                  n.trees = 50,
+                                  shrinkage=0.005,         # learning rate
+                                  bag.fraction = 0.5,      # subsampling fraction
+                                  train.fraction = 1,      # fraction of data for training
+                                  n.minobsinnode = 10,
+                                  interaction.depth = 2)
+preds <- predict(soothsayer_model_gbm, soothsayer_test)
+gbm::gbm.perf(soothsayer_model_gbm)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+TODO:
+Can we also use some anomaly detection algorithm, and does being an anomaly correlate with this error? 
+
+
+
+
+<!-- # TODO:  -->
+<!-- # Podium counts: (3 best methods get re-sampled probabilistically) -->
+
+<!-- ```{r} -->
+<!-- podium_counts <- accuracy_ranks %>%  -->
+<!--   dplyr::group_by(key) %>%  -->
+<!--   dplyr::arrange( avg_rank ) %>%  -->
+<!--   dplyr::slice_head(n = 3) %>%  -->
+<!--   dplyr::select(.model, key) %>%  -->
+<!--   dplyr::ungroup() -->
+<!-- ``` -->
 
 
