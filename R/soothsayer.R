@@ -72,7 +72,7 @@ train_soothsayer <- function(.data, specials, ...) {
     list( features = feature_df,
           rules = fit_rules,
           models = model_fits ),
-    class = "model_soothsayer"
+    class = "soothsayer"
   )
 }
 
@@ -84,13 +84,8 @@ specials_soothsayer <- fabletools::new_specials(
     }
     return(rules)
   },
-  oracle = function(...,
-                    fitted_oracle = oracle_random,
-                    certainty = 0.1,
-                    mix = FALSE) {
-    # models <- rlang::dots_list(...)
-    #
-    # fitted_oracle(models)
+  oracle = function( trained_oracle = random_oracle ) {
+    return(trained_oracle)
   },
   model_aliases = function( aliases = soothsayer_alias_set ) {
     if( is.null(aliases) ) return( soothsayer_alias_set )
@@ -100,24 +95,81 @@ specials_soothsayer <- fabletools::new_specials(
     if( is.null(features) ) return(soothsayer_feature_set)
     features
   },
+  combinator = function(combinator = mean) {
+    combinator
+  },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
     stop("Exogenous regressors aren't supported by `soothsayer()`")
   },
-  .required_specials = c("feature_set", "model_aliases")
+  .required_specials = c("feature_set", "model_aliases", "combinator")
 )
-
-generate.soothsayer <- function( object,
-                                 new_data) {
+#' @importFrom generics generate
+#' @export
+generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, times = 1, bootstrap = FALSE, seed = NULL,
+                       ...)
+{
+  combinator <- specials$combinator[[1]]
+  generated_distrs <- purrr::imap( x[["models"]],
+                                  function(model, name) {
+                                    dplyr::bind_cols(
+                                      generate(
+                                      model[[1]],
+                                      new_data = new_data,
+                                      h = h,
+                                      times = times,
+                                      bootstrap = bootstrap,
+                                      seed = seed,
+                                      ...),
+                                      model = name)
+  })
+  dplyr::bind_rows( purrr::map( generated_distrs,
+                                dplyr::as_tibble ) ) %>%
+    dplyr::group_by(.data$Month) %>%
+    dplyr::summarise( .sim = combinator(.data$.sim),
+                      .rep = unique(.data$.rep)
+                      ) %>%
+    tsibble::as_tsibble(index = "Month")
 
 }
+# merge_distribution_forecasts <- function( dist_fcsts, weights = NULL ) {
+#
+#   if(is.null(weights)) {
+#     weights <- rep(1, length(dist_fcsts))/length(dist_fcsts)
+#   }
+#   ind_var <- tsibble::index_var(dist_fcsts[[1]])
+#   dates <- dist_fcsts[[1]][[ind_var]]
+#
+#   distrs <- purrr::map( dist_fcsts,  )
+#
+#
+#
+#
+#   distributional::dist_mixture()
+#
+#
+#
+# }
 
+#' @importFrom fabletools forecast
+#' @export
 forecast.soothsayer <- function( object,
-                                 new_data,
-                                 bootstrap = FALSE, # enable lists here
-                                 times = 100, # and here?
+                                 new_data = NULL,
+                                 specials = NULL,
+                                 bootstrap = FALSE,
+                                 times = 100,
                                  ... ) {
-
+  purrr::map( object[["models"]],
+              function(.x) {
+                fabletools::forecast(
+                .x[[1]],
+                new_data = new_data,
+                bootstrap = bootstrap,
+                times = times, ...)
+              }
+              )[[1]]
+  # global_res_fcst <<- res
+  # dplyr::bind_rows(res)#[[1]]
 }
 #' Soothsayer model
 #'
@@ -125,6 +177,7 @@ forecast.soothsayer <- function( object,
 #' @param formula A soothsayer model formula (see details).
 #' @param ... Additional arguments (see details).
 #' @return A soothsayer model, analogous to other model objects within fable/fabletools.
+#' @details Accepts and parses several model specials - notably rules, oracle, feature_set, model_aliases, combinator
 #' @note Maybe some other day.
 #' @export
 soothsayer <- function(formula, ...) {
