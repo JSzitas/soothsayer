@@ -9,8 +9,9 @@ random_forecast_h(x, min_h = 4, max_h = 12, ...)
 
 soothsayer_forecaster(
   series,
-  models = list(arima = fable::ARIMA, fable::SNAIVE, fable::RW, theta = fable::THETA,
-    ets = fable::ETS, nnetar = fable::NNETAR, croston = fable::CROSTON, ar = fable::AR),
+  models = list(arima = fable::ARIMA, snaive = fable::SNAIVE, rw = fable::RW, theta =
+    fable::THETA, ets = fable::ETS, nnetar = fable::NNETAR, croston = fable::CROSTON, ar
+    = fable::AR),
   forecast_h = random_forecast_h,
   save_forecast_experiment = TRUE,
   save_outfile = "1",
@@ -19,7 +20,7 @@ soothsayer_forecaster(
 )
 }
 \arguments{
-\item{x}{The time series (a vector).}
+\item{x}{The time series (a sorted data.frame, or a tsibble).}
 
 \item{min_h}{The minimal length of the forecast}
 
