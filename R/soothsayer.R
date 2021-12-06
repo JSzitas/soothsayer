@@ -12,14 +12,19 @@ train_soothsayer <- function(.data, specials, ...) {
   rule_models <- purrr::map(rules, rlang::f_lhs)
   rule_rhs <- purrr::map(rules, rlang::f_rhs)
 
+  matched_models <- NULL
   if( !is.null(rules) ) {
     fit_rules <- purrr::map( rule_rhs,
                              ~ rlang::eval_tidy( .x, data = feature_df))
     names(fit_rules) <- rlang::eval_bare(rule_models)
     matched_models <- unlist(fit_rules)
     matched_models <- names(matched_models[ which(matched_models) ])
-    models_to_fit <- aliases[ matched_models ]
   }
+  if( !is.null(oracle)) {
+    matched_models <- c( matched_models, predict(oracle, feature_df))
+  }
+  matched_models <- unique(matched_models)
+  models_to_fit <- aliases[ matched_models ]
 
   model_defs <- purrr::map( models_to_fit, ~ .x( !!rlang::sym(target)))
 
