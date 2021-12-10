@@ -25,15 +25,21 @@ train_soothsayer <- function(.data, specials, ...) {
   }
   matched_models <- unique(matched_models)
   models_to_fit <- aliases[ matched_models ]
-
   model_defs <- purrr::map( models_to_fit, ~ .x( !!rlang::sym(target)))
 
   model_fits <- fabletools::model(.data,
                                   !!!model_defs, .safely = TRUE)
+  model_weights <- if( length(model_fits) > 1 ) {
+    specials$combiner[[1]](model_fits)
+  } else {
+   1
+  }
+
   structure(
     list( features = feature_df,
           rules = fit_rules,
-          models = model_fits ),
+          models = model_fits,
+          model_weights = model_weights),
     class = "soothsayer"
   )
 }
@@ -57,14 +63,14 @@ specials_soothsayer <- fabletools::new_specials(
     if( is.null(features) ) return(soothsayer_feature_set)
     features
   },
-  combinator = function(combinator = mean) {
-    combinator
+  combiner = function(combiner = combiner_mean, prior_weights = NULL, metric = rmse, ...) {
+    purrr::partial( .f = combiner, prior_weights = prior_weights, metric = metric)
   },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
     stop("Exogenous regressors aren't supported by `soothsayer()`")
   },
-  .required_specials = c("feature_set", "model_aliases", "combinator")
+  .required_specials = c("feature_set", "model_aliases", "combiner")
 )
 #' Soothsayer model
 #'
