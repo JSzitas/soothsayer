@@ -39,3 +39,24 @@ combiner_mean <- function(.models, prior_weights = NULL, ... ) {
 combiner_custom <- function(.models, prior_weights = NULL, ... ) {
   prior_weights/sum(prior_weights)
 }
+#' @rdname combiners
+#' @export
+combiner_lm <- function(.models, prior_weights = NULL, ... ) {
+
+  X <- .models %>%
+    purrr::map(~ fitted(.x[[1]]) ) %>%
+    purrr::map(as.data.frame) %>%
+    purrr::map( ~ .x[[".fitted"]] ) %>%
+    dplyr::bind_cols() %>%
+    as.matrix
+  y <- .models[[1]][[1]][["data"]]
+  measured_var <- tsibble::measured_vars(y)
+  y <- y[[measured_var]]
+
+  weights <- stats::coef(stats::lm(y ~ X-1))
+  weights <- weights/sum(weights)
+  names(weights) <- NULL
+  colMeans( rbind( weights, prior_weights))
+}
+
+
