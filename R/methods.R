@@ -32,22 +32,6 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
     tsibble::as_tsibble(index = "Month")
 
 }
-merge_distribution_forecasts <- function( dists, weights = NULL ) {
-  if( length(dists) == 1 ) {
-    return(dists[[1]])
-  }
-  if(is.null(weights)) {
-    weights <- rep(1, length(dists))/length(dists)
-  }
-  # note that since purrr::pmap_dist doesnt exist, we have to use the list version
-  # and then index into the list... which is ugly, but it works
-  merged_dists <- purrr::pmap(dists,
-                              ~ distributional::dist_mixture(.x,
-                                                             weights = weights)
-                              )[[1]]
-  return( merged_dists )
-}
-
 # to be fair, this is a method over a fable, but I do not want to write a generics for it
 get_distribution <- function(x) {
   distr <- purrr::map_lgl( x, distributional::is_distribution )
@@ -72,31 +56,26 @@ forecast.soothsayer <- function( object,
                   bootstrap = bootstrap,
                   times = times, ...) %>%
                   get_distribution()
-              }
+                }
   )
-  # weights <- combine_greedy_stacking( object[["models"]] )
-  dsts <<- fcsts
-  # for now mix the distributions with equal weights
-  merge_distribution_forecasts(fcsts, weights = NULL )
+  # if we only have one model, dont worry about anything else :)
+  if( length(object[["models"]]) == 1 ) {
+    return(fcsts[[1]][[1]])
+  }
+  # otherwise, get weights
+  weights <- object[["model_weights"]]
+  # get forecast means
+  fcst_means <- fcsts %>%
+    purrr::map( ~mean(.x[[1]]) ) %>%
+    dplyr::bind_cols() %>%
+    as.matrix
+  # and compute the final mean
+  fcst_means <- c( fcst_means %*% weights )
+  # also get forecast variances
+
+  # I am quite unsure at this point that computing the variances is very sensible
+  # for non-normal distributions its bad, but even for normal distributions... there is
+  # no guarantee that the end result is normal. if its bimodal... then we are a bit
+  # screwed either way. lets not do that.
+  distributional::dist_degenerate( fcst_means )
 }
-
-# IDEA: pdqr to the rescue!
-# # Create a list of pdqr-functions
-# norm_list <- list(
-#   as_d(dnorm), as_d(dnorm, mean = 2, sd = 0.25), as_d(dnorm, mean = 4, sd = 0.5)
-# )
-#
-# # Form a mixture with custom weights
-# norm_mix <- form_mix(norm_list, weights = c(0.6, 0.2, 0.2))
-#
-# # Compute 95% highest density region
-# (norm_hdr <- summ_hdr(norm_mix, level = 0.95))
-# #>          left      right
-# #> 1 -1.82442072 2.53095750
-# #> 2  3.19649819 4.79334429
-#
-# # Visualize
-# plot(norm_mix, main = "95% highest density region for normal mixture")
-# region_draw(norm_hdr)
-
-
