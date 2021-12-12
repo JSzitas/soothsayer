@@ -553,13 +553,3 @@ soothsayer_feature_set <- list( entropy,
                                 catch22_feat
 )
 # nocov end
-
-
-# acf_features,
-# spectral,
-# unitroot_ndiffs,
-# unitroot_nsdiffs,
-# shift_kl_max,
-# shift_level_max,
-# shift_var_max,
-# boxcox_lambda
