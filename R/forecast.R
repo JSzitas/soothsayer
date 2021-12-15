@@ -7,9 +7,10 @@
 #' @return A random forecast length, sampled uniformly between **min_h** and **max_h**.
 #' @rdname oracle_utils
 #' @export
-random_forecast_h <- function( x, min_h = 4, max_h = 12, ... ) {
+random_forecast_h <- function( x, min_h = 1, max_h = 12, ... ) {
   h <- min_h:max( min( nrow(x)/2, max_h ), min_h)
   # consider sample weights?
+  test_size <- sample( h, size = 1)
   dplyr::mutate( x, forecast_h = sample( h, size = 1))
 }
 
@@ -41,9 +42,17 @@ ts_train_test <- function( ts_tbl,
     dplyr::bind_rows() %>%
     dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
     dplyr::mutate( train = index < max( index) - forecast_h + 1) %>%
-    dplyr::select( -tidyselect::all_of(c("forecast_h", "period")) ) %>%
+    dplyr::select( -tidyselect::all_of(c("period")) ) %>%
     dplyr::as_tibble() %>%
     tsibble::as_tsibble( index = time_index, key = key_var )
+
+  forecast_h <- series %>%
+    as.data.frame() %>%
+    dplyr::select( tidyselect::all_of( c("forecast_h", key_var ))) %>%
+    dplyr::distinct()
+
+  series <- series %>%
+    dplyr::select( -tidyselect::all_of("forecast_h") )
 
   train <- series %>%
     dplyr::filter( train ) %>%
@@ -53,7 +62,7 @@ ts_train_test <- function( ts_tbl,
     dplyr::filter( !train ) %>%
     dplyr::select( -tidyselect::all_of( "train" ) )
 
-  return(list( train = train, test = test ))
+  return(list( train = train, test = test, forecast_h = forecast_h ))
 }
 
 fit_models <- function( train,
@@ -129,6 +138,7 @@ soothsayer_forecaster <- function( series,
   }
   accuracies <- fabletools::accuracy(forecasts[["forecasts"]],
                                      train_test[["test"]])
+  accuracies <- dplyr::left_join( accuracies, train_test[["forecast_h"]], by = "key" )
 
   if( save_forecast_experiment ) {
     fs::dir_create(paste0(save_folder,"/accuracies"))
