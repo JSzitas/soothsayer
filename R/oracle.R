@@ -26,6 +26,7 @@ new_soothsayer_oracle <- function( oracle_name = NULL,
                                    predict = function(...){ # how the oracle generates labels
                                      rlang::abort("This oracle must have a prediction method.")
                                    },
+                                   emits = "models", # or "weights"
                                    ... ) {
 
   fail_if_not_cond( is.null(feature_data) & is.null(series_data),
@@ -49,7 +50,8 @@ new_soothsayer_oracle <- function( oracle_name = NULL,
                    forecast_accuracies = forecast_accuracies,
                    fitted_oracle = NULL,
                    train = train,
-                   predict = predict ),
+                   predict = predict,
+                   emit_type = emits),
              class = c( "soothsayer_oracle", oracle_name))
 }
 #' @importFrom generics fit
