@@ -8,29 +8,42 @@ train_soothsayer <- function(.data, specials, ...) {
   aliases <- specials$model_aliases[[1]]
   rules <- specials$rules[[1]]
   oracle <- specials$oracle[[1]]
+  resolution <- specials$resolution[[1]]
 
   rule_models <- purrr::map(rules, rlang::f_lhs)
   rule_rhs <- purrr::map(rules, rlang::f_rhs)
 
-  matched_models <- NULL
   if( !is.null(rules) ) {
     fit_rules <- purrr::map( rule_rhs,
                              ~ rlang::eval_tidy( .x, data = feature_df))
     names(fit_rules) <- rlang::eval_bare(rule_models)
     matched_models <- unlist(fit_rules)
-    matched_models <- names(matched_models[ which(matched_models) ])
+    matched_models_rule <- names(matched_models[ which(matched_models) ])
   }
-  if( !is.null(oracle)) {
-    matched_models <- c( matched_models, predict(oracle, feature_df))
+  # we have to set this to NULL by default
+  oracle_weights <- NULL
+  if(!is.null(oracle)) {
+
+    matched_models_oracle <- ifelse( !is.null(oracle),
+                                     predict(oracle, feature_df),
+                                     NULL)
+    if(oracle[["emit_type"]] == "weights") {
+      oracle_weights <- c(matched_models_oracle)
+      matched_models_oracle <- names(matched_models_oracle)
+    }
   }
-  matched_models <- unique(matched_models)
+  matched_models <- model_resolver( rule_models = matched_models_rule,
+                                    oracle_models = matched_models_oracle,
+                                    choose_first = resolution[["which_model"]],
+                                    resolution = resolution[["precedence"]] )
+
   models_to_fit <- aliases[ matched_models ]
   model_defs <- purrr::map( models_to_fit, ~ .x( !!rlang::sym(target)))
 
   model_fits <- fabletools::model(.data,
                                   !!!model_defs, .safely = TRUE)
   model_weights <- if( length(model_fits) > 1 ) {
-    specials$combiner[[1]](model_fits)
+    specials$combiner[[1]](model_fits, oracle_weights)
   } else {
    1
   }
@@ -64,13 +77,24 @@ specials_soothsayer <- fabletools::new_specials(
     features
   },
   combiner = function(combiner = combiner_mean, prior_weights = NULL, metric = rmse, ...) {
-    purrr::partial( .f = combiner, prior_weights = prior_weights, metric = metric)
+    purrr::partial( .f = combiner, prior_weights = prior_weights, metric = metric, ...)
+  },
+  resolution = function( model = "all", rule_vs_oracle = "both" ) {
+    # add argument checking
+    if( !( model %in% c("first", "all"))) {
+      rlang::abort( message = "resolution model must be 'all' or 'first'." )
+    }
+    if( !( rule_vs_oracle %in% c("rule", "oracle","both"))) {
+      rlang::abort(message = "resolution rule_vs_oracle must be 'rule' or 'oracle' or 'both'." )
+    }
+    list( which_model = model,
+          precedence = rule_vs_oracle )
   },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
     stop("Exogenous regressors aren't supported by `soothsayer()`")
   },
-  .required_specials = c("feature_set", "model_aliases", "combiner")
+  .required_specials = c("feature_set", "model_aliases", "combiner", "resolution")
 )
 #' Soothsayer model
 #'
