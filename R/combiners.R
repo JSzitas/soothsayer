@@ -5,13 +5,14 @@
 #' @param .models The fitted models - this is a named or unnamed list of fitted fable compatible models.
 #' @param prior_weights Prior weights to use for combinations - see details.
 #' @param metric The metric to use when using greedy stacking (defaults to rmse).
+#' @param oracle_weights Weights returned by an oracle (if available).
 #' @param ... Additional parameters (currently not implemented).
 #' @return A vector of length .models containing the individual weights
 #' @details Prior weights can be passed to combiner_custom and they will be the
 #' only weights computed by that combiner. Other combiners take the average of prior_weights
 #' and whatever weights they output.
 #' @export
-combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rmse, ... ) {
+combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rmse, oracle_weights = NULL, ... ) {
 
   Z <- .models %>%
     purrr::map(~ fitted(.x[[1]]) ) %>%
@@ -29,7 +30,7 @@ combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rms
 }
 #' @rdname combiners
 #' @export
-combiner_mean <- function(.models, prior_weights = NULL, ... ) {
+combiner_mean <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
 
   avg_weights <- rep(1, length(.models))/length(.models)
   colMeans( rbind( avg_weights, prior_weights))
@@ -41,7 +42,12 @@ combiner_custom <- function(.models, prior_weights = NULL, ... ) {
 }
 #' @rdname combiners
 #' @export
-combiner_lm <- function(.models, prior_weights = NULL, ... ) {
+combiner_oracle <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
+  oracle_weights/sum(oracle_weights)
+}
+#' @rdname combiners
+#' @export
+combiner_lm <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
 
   X <- .models %>%
     purrr::map(~ fitted(.x[[1]]) ) %>%
@@ -58,5 +64,11 @@ combiner_lm <- function(.models, prior_weights = NULL, ... ) {
   names(weights) <- NULL
   colMeans( rbind( weights, prior_weights))
 }
+#' @rdname combiners
+#' @export
+combiner_composite <- function( combiners, ... ) {
+
+}
+
 
 
