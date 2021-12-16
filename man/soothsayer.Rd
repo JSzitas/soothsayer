@@ -17,6 +17,9 @@ A soothsayer model, analogous to other model objects within fable/fabletools.
 \description{
 The main function of soothsayer - creates soothsayer models trainable and usable within fable and fabletools.
 }
+\details{
+Accepts and parses several model specials - notably rules, oracle, feature_set, model_aliases, combinator
+}
 \note{
 Maybe some other day.
 }

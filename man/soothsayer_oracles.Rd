@@ -2,6 +2,8 @@
 % Please edit documentation in R/oracle.R
 \name{new_soothsayer_oracle}
 \alias{new_soothsayer_oracle}
+\alias{fit.soothsayer_oracle}
+\alias{predict.soothsayer_oracle}
 \title{Defne a soothsayer oracle}
 \usage{
 new_soothsayer_oracle(
@@ -15,8 +17,13 @@ new_soothsayer_oracle(
     rlang::abort("This oracle must have a training method.") },
   predict = function(...) {    
     rlang::abort("This oracle must have a prediction method.") },
+  emits = "models",
   ...
 )
+
+\method{fit}{soothsayer_oracle}(object, ...)
+
+\method{predict}{soothsayer_oracle}(object, features, ...)
 }
 \arguments{
 \item{oracle_name}{= NULL,}
@@ -36,7 +43,16 @@ this will be checked against}
 
 \item{predict}{The prediction for your oracle.}
 
+\item{emits}{What the model emits (either **"models"** or **"weights"**) where **models**
+is a variable length character vector, e.g. **c("ets","ar")**, or a named vector of weights,
+e.g. **c("ets" = 0.3, "ar" = 0.7)**.}
+
 \item{...}{Additional arguments (currently unimplemented).}
+
+\item{object}{The soothsayer oracle to fit/use for prediction.}
+
+\item{features}{The features to use for the predict function (analogous to newx/newdata in
+other predict functions).}
 }
 \value{
 A soothsayer oracle

@@ -5,7 +5,7 @@
 \alias{soothsayer_forecaster}
 \title{Soothsayer oracle training utilities}
 \usage{
-random_forecast_h(x, min_h = 4, max_h = 12, ...)
+random_forecast_h(x, min_h = 1, max_h = 12, ...)
 
 soothsayer_forecaster(
   series,
