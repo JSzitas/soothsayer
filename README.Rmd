@@ -16,6 +16,10 @@ knitr::opts_chunk$set(
 # soothsayer
 
 <!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![R-CMD-check](https://github.com/JSzitas/soothsayer/workflows/R-CMD-check/badge.svg)](https://github.com/JSzitas/soothsayer/actions)
+[![Codecov test coverage](https://codecov.io/gh/JSzitas/soothsayer/branch/main/graph/badge.svg)](https://codecov.io/gh/JSzitas/soothsayer?branch=main)
+[![CRAN status](https://www.r-pkg.org/badges/version/soothsayer)](https://CRAN.R-project.org/package=soothsayer)
 <!-- badges: end -->
 
 soothsayer tries to automate time series model selection, using a flexible approach to 
