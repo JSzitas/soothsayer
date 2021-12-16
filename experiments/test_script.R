@@ -1,32 +1,33 @@
 remove(list = ls())
 pkgload::load_all()
-#
+
 # readRDS("data/soothsayer_default_accuracy_tbl.rds") -> accuracy_tbl
 # readRDS("data/soothsayer_default_feature_tbl.rds") -> features
-#
-#
-# random_oracle <-  new_soothsayer_oracle( oracle_name = "random_oracle",
-#                                          feature_data = c(1),
-#                                          forecast_accuracies = c(1),
-#                                          train = function( accuracy_tbl, features ) {
-#                                            list( models = c("ar",
-#                                                             "arima",
-#                                                             "croston",
-#                                                             "ets",
-#                                                             "nnetar",
-#                                                             "rw",
-#                                                             "snaive",
-#                                                             "theta")
-#                                                  )
-#                                          },
-#                                          predict = function( oracle, features ) {
-#                                            sample( oracle$models, 1 )
-#                                          }
-# )
-#
-# random_oracle <- fit( random_oracle )
-#
-# random_pred <- predict(random_oracle, accuracy_tbl[1,])
+
+
+random_oracle <-  new_soothsayer_oracle( oracle_name = "random_oracle",
+                                         feature_data = c(1),
+                                         forecast_accuracies = c(1),
+                                         train = function( accuracies = NULL, features = NULL ) {
+                                           list( models = c("ar",
+                                                            "arima",
+                                                            "croston",
+                                                            "ets",
+                                                            "nnetar",
+                                                            "rw",
+                                                            "snaive",
+                                                            "theta")
+                                                 )
+                                         },
+                                         predict = function( oracle, features ) {
+                                           set.seed(ncol(features))
+                                           sample( oracle$models, 1 )
+                                         }
+)
+
+random_oracle <- fit( random_oracle )
+
+# random_pred <- predict(random_oracle)
 #
 #
 # ranger_oracle <- new_soothsayer_oracle( oracle_name = "ranger_oracle",
@@ -99,26 +100,29 @@ ex_data <- tsibbledata::aus_livestock %>%
   dplyr::ungroup() %>%
   tsibble::as_tsibble(index = "Month")
 
+train <- dplyr::filter(ex_data, Month < tsibble::yearmonth("2017 Jan"))
+test <- dplyr::filter( ex_data, Month > tsibble::yearmonth("2017 Jan") )
+
 fabletools::model(
-  ex_data,
-  # fable::AR( count ),
-  soothsayer(count ~ rules(
-    ARIMA ~ .length > 12,
-    # AR ~ TRUE,
-    ETS ~ .length > 15
-  ))
+  train,
+  ar = fable::ARIMA( count ),
+  soothsayer = soothsayer(count ~ rules(
+    arima ~ .length > 12,
+    ar ~ TRUE,
+    ets ~ .length > 15
+  ) + oracle(random_oracle) +
+    combiner(combiner_greedy_stacking) ),
+  soothsayer2 = soothsayer(count ~ rules(
+    arima ~ .length > 12,
+    ar ~ TRUE,
+    ets ~ .length > 15
+  ) + oracle(random_oracle) +
+    combiner(combiner_lm))
 ) -> fitted
 
-# generated <- generate(fitted)
-forecasted <- forecast(fitted)
-
-distributional::dist_mixture(global_res_fcst[["ARIMA"]]$count,
-                             global_res_fcst[["ETS"]]$count,
-                             weights = c(0.5,0.5)) %>%
-  distributional::variance()
-
-
-
-# fcst <- forecast(fitted[[1]][[1]][["fit"]], h = 8)
+generated <- generate(fitted)
+forecasted <- forecast(fitted, new_data = test)
+# library(fabletools)
+# autoplot(forecasted, test)
 
 
