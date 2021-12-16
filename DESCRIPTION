@@ -12,21 +12,27 @@ LazyData: true
 Depends: 
     R (>= 2.10)
 Imports: 
-    tsibble,
-    dplyr,
-    furrr,
+    fable,
     purrr,
+    dplyr,
+    tsibble,
     stats,
+    rlang,
+    furrr,
     tseries,
     fracdiff,
     urca,
     Rcatch22,
-    rlang,
     magrittr,
     slider,
-    fable,
+    tidyselect,
     fabletools,
     fs,
     qs,
+    distributional,
     generics
 RoxygenNote: 7.1.2
+Suggests: 
+    tsibbledata,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
