@@ -41,7 +41,7 @@ ts_train_test <- function( ts_tbl,
     purrr::map( ~ handle_forecast_h(.x, forecast_h)  ) %>%
     dplyr::bind_rows() %>%
     dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
-    dplyr::mutate( train = index < max( index) - forecast_h + 1) %>%
+    dplyr::mutate( train = rlang::.data$index < max( .data$index) - forecast_h + 1) %>%
     dplyr::select( -tidyselect::all_of(c("period")) ) %>%
     dplyr::as_tibble() %>%
     tsibble::as_tsibble( index = time_index, key = key_var )

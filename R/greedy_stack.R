@@ -1,10 +1,10 @@
 
 rmse <- function( true, predicted ) {
-  sqrt(mean( (na.omit(true - predicted))^2))
+  sqrt(mean( (stats::na.omit(true - predicted))^2))
 }
 
 mae <- function( true, predicted ) {
-  mean( abs(na.omit(true - predicted)))
+  mean( abs(stats::na.omit(true - predicted)))
 }
 
 # greedy stacking of models, or determining model weights greedily using

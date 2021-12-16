@@ -46,19 +46,19 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
   features <- transformer(as.data.frame(x))
   feature_names <- names(features)
   # a bit of coercion magic so that we get the correctly formatted, correctly
-  # named table
+  # named table (ie you cast the result to a matrix and THEN data.frame, since otherwise
+  # you would get a single column data.frame (which we do not want))
   features <- as.data.frame(matrix( transformer(as.data.frame(x)), nrow = 1))
   colnames(features) <- feature_names
   return(features)
 }
-# we could probably have this within compute_features, but for reproducibility
+# we could probably have this within compute_features, but for testability
 # and cleanliness, we already have it separated out
 generate_feature_transformer <- function( feature_set, values_from ) {
   # just a wrapper so that the functions return NaN rather than a random error
   safe_set <- purrr::map( feature_set, ~ purrr::possibly(.f = .x, otherwise = NaN)  )
   # then we generate a closure which specifies what we will be calculating -
   # this also enables as to easily use future_map
-
   transformer <- function( .x ) {
     .features <- purrr::map( safe_set,
                              function(.f) .f( .x[[values_from]] ))

@@ -3,6 +3,7 @@
 #' @description A set of soothsayer model aliases (for purposes of matching).
 #' @rdname soothsayer_model_aliases
 #' @export
+# nocov start
 soothsayer_alias_set <- list( "fable::AR" = fable::AR,
                               "AR" = fable::AR,
                               "ar" = fable::AR,
@@ -40,3 +41,4 @@ soothsayer_alias_set <- list( "fable::AR" = fable::AR,
                               "VAR" = fable::VAR,
                               "var" = fable::VAR
 )
+# nocov end

@@ -1,7 +1,6 @@
-#' @rdname combiners
-#' Get combinations weights for model combinatiions
+#' Combination functions which return combination weights
 #'
-#' @desccription Combination functions which return combination weights
+#' @description Functions which calculate ensemble model combination weights
 #' @param .models The fitted models - this is a named or unnamed list of fitted fable compatible models.
 #' @param prior_weights Prior weights to use for combinations - see details.
 #' @param metric The metric to use when using greedy stacking (defaults to rmse).
@@ -12,6 +11,7 @@
 #' only weights computed by that combiner. Other combiners take the average of prior_weights
 #' and whatever weights they output.
 #' @export
+#' @rdname combiners
 combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rmse, oracle_weights = NULL, ... ) {
 
   Z <- .models %>%
@@ -64,11 +64,3 @@ combiner_lm <- function(.models, prior_weights = NULL, oracle_weights = NULL, ..
   names(weights) <- NULL
   colMeans( rbind( weights, prior_weights))
 }
-#' @rdname combiners
-#' @export
-combiner_composite <- function( combiners, ... ) {
-
-}
-
-
-

@@ -10,9 +10,16 @@
 #' @param forecaster = soothsayer_forecaster, # use our default forecastng engine
 #' @param train The training function for your oracle.
 #' @param predict The prediction for your oracle.
+#' @param emits What the model emits (either **"models"** or **"weights"**) where **models**
+#' is a variable length character vector, e.g. **c("ets","ar")**, or a named vector of weights,
+#' e.g. **c("ets" = 0.3, "ar" = 0.7)**.
 #' @param ... Additional arguments (currently unimplemented).
+#' @param object The soothsayer oracle to fit/use for prediction.
+#' @param features The features to use for the predict function (analogous to newx/newdata in
+#' other predict functions).
 #' @return A soothsayer oracle
 #' @export
+#' @rdname soothsayer_oracles
 new_soothsayer_oracle <- function( oracle_name = NULL,
                                    feature_data = NULL, # either the full feature data,
                                    series_data = NULL, # or series data
@@ -29,14 +36,14 @@ new_soothsayer_oracle <- function( oracle_name = NULL,
                                    emits = "models", # or "weights"
                                    ... ) {
 
-  fail_if_not_cond( is.null(feature_data) & is.null(series_data),
-                    "Must provide feature or series data, but both are null.")
-  fail_if_not_cond( is.null(forecast_accuracies) & is.null(forecaster),
-                    "Either forecast accuracies or a forecaster must be provided.")
-  fail_if_not_cond( is.null(forecaster) & is.null(forecast_accuracies),
-                    "Both forecast accuracies and forecaster cannot be missng at the same time - provide either of them." )
-  fail_if_not_cond( is.null(train), "A training function for the oracle must be provided." )
-  fail_if_not_cond( is.null(predict), "A prediction function for the oracle must be provided.")
+  fail_if_cond( is.null(feature_data) & is.null(series_data),
+                "Must provide feature or series data, but both are null.")
+  fail_if_cond( is.null(forecast_accuracies) & is.null(forecaster),
+                "Either forecast accuracies or a forecaster must be provided.")
+  fail_if_cond( is.null(forecaster) & is.null(forecast_accuracies),
+                "Both forecast accuracies and forecaster cannot be missng at the same time - provide either of them." )
+  fail_if_cond( is.null(train), "A training function for the oracle must be provided." )
+  fail_if_cond( is.null(predict), "A prediction function for the oracle must be provided.")
 
   # finally, if we did not fail, we get to compute the features
   if( is.null(feature_data)){
@@ -56,6 +63,7 @@ new_soothsayer_oracle <- function( oracle_name = NULL,
 }
 #' @importFrom generics fit
 #' @export
+#' @rdname soothsayer_oracles
 fit.soothsayer_oracle <- function( object, ... ) {
   object[["fitted_oracle"]] <- object$train( object[["forecast_accuracies"]],
                                              object[["feature_data"]]  )
@@ -63,6 +71,7 @@ fit.soothsayer_oracle <- function( object, ... ) {
 }
 #' @importFrom stats predict
 #' @export
+#' @rdname soothsayer_oracles
 predict.soothsayer_oracle <-function( object, features, ... ) {
   object$predict( object$fitted_oracle, features )
 }

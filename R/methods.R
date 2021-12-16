@@ -20,7 +20,7 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
                                    })
   dists <- purrr::imap( generated_distrs, function(dist, name) {
     dist %>%
-    dplyr::mutate( .sim = .sim * weights[name]) %>%
+    dplyr::mutate( .sim = .data$.sim * weights[name]) %>%
       tsibble::as_tibble()
   }) %>%
     dplyr::bind_rows()
@@ -32,7 +32,7 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
     tsibble::as_tsibble(index = "Month")
 
 }
-# to be fair, this is a method over a fable, but I do not want to write a generics for it
+# to be fair, this is a method over a fable, but I do not want to write a generic for it
 get_distribution <- function(x) {
   distr <- purrr::map_lgl( x, distributional::is_distribution )
   distr <- names(distr)[ which(distr) ]

@@ -81,12 +81,10 @@ specials_soothsayer <- fabletools::new_specials(
   },
   resolution = function( model = "all", rule_vs_oracle = "both" ) {
     # add argument checking
-    if( !( model %in% c("first", "all"))) {
-      rlang::abort( message = "resolution model must be 'all' or 'first'." )
-    }
-    if( !( rule_vs_oracle %in% c("rule", "oracle","both"))) {
-      rlang::abort(message = "resolution rule_vs_oracle must be 'rule' or 'oracle' or 'both'." )
-    }
+    fail_if_cond( !( model %in% c("first", "all")),
+                  "resolution model must be 'all' or 'first'." )
+    fail_if_cond( !( rule_vs_oracle %in% c("rule", "oracle","both")),
+                  "resolution rule_vs_oracle must be 'rule' or 'oracle' or 'both'." )
     list( which_model = model,
           precedence = rule_vs_oracle )
   },
