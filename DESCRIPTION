@@ -23,7 +23,6 @@ Imports:
     fracdiff,
     urca,
     Rcatch22,
-    magrittr,
     slider,
     tidyselect,
     fabletools,
