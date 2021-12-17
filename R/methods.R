@@ -12,31 +12,26 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
                                          model[[1]],
                                          new_data = new_data,
                                          h = h,
-                                         times = times,
-                                         bootstrap = bootstrap,
-                                         seed = seed,
+                                         times = 0,
+                                         bootstrap = FALSE,
+                                         seed = NULL,
                                          ...),
                                        model = name)
                                    })
   dists <- purrr::imap( generated_distrs, function(dist, name) {
-    dist %>%
-    dplyr::mutate( .sim = .data$.sim * weights[name]) %>%
-      tsibble::as_tibble()
-  }) %>%
-    dplyr::bind_rows()
-  dists %>%
-    dplyr::group_by(.data$Month) %>%
-    dplyr::summarise( .sim = sum(.data$.sim),
-                      .rep = unique(.data$.rep)
-    ) %>%
-    tsibble::as_tsibble(index = "Month")
-
+    dists <- dplyr::mutate(dist, .sim = .data$.sim * weights[name])
+    tsibble::as_tibble(dists)
+  })
+  dists <- dplyr::group_by( dplyr::bind_rows(dists), .data$Month)
+  dists <- dplyr::summarise( dists,
+                             .sim = sum(.data$.sim),
+                             .rep = unique(.data$.rep))
+  tsibble::as_tsibble(dists, index = "Month")
 }
 # to be fair, this is a method over a fable, but I do not want to write a generic for it
 get_distribution <- function(x) {
   distr <- purrr::map_lgl( x, distributional::is_distribution )
   distr <- names(distr)[ which(distr) ]
-
   c(x[,distr])
 }
 
@@ -50,12 +45,12 @@ forecast.soothsayer <- function( object,
                                  ... ) {
   fcsts <- purrr::map( object[["models"]],
               function(.x) {
-                fabletools::forecast(
+                fcst <- fabletools::forecast(
                   .x[[1]],
                   new_data = new_data,
-                  bootstrap = bootstrap,
-                  times = times, ...) %>%
-                  get_distribution()
+                  bootstrap = FALSE,
+                  times = 0, ...)
+                  get_distribution(fcst)
                 }
   )
   # if we only have one model, dont worry about anything else :)
@@ -65,10 +60,8 @@ forecast.soothsayer <- function( object,
   # otherwise, get weights
   weights <- object[["model_weights"]]
   # get forecast means
-  fcst_means <- fcsts %>%
-    purrr::map( ~mean(.x[[1]]) ) %>%
-    dplyr::bind_cols() %>%
-    as.matrix
+  fcst_means <- purrr::map(fcsts,  ~mean(.x[[1]]) )
+  fcst_means <- as.matrix(dplyr::bind_cols(fcst_means))
   # and compute the final mean
   fcst_means <- c( fcst_means %*% weights )
   # also get forecast variances
@@ -79,3 +72,14 @@ forecast.soothsayer <- function( object,
   # screwed either way. lets not do that.
   distributional::dist_degenerate( fcst_means )
 }
+
+# residuals.soothsayer
+# fitted.soothsayer
+# glance.soothsayer
+# tidy.soothsayer
+# #report.soothsayer
+# model_sum.soothsayer
+# refit.soothsayer
+
+
+

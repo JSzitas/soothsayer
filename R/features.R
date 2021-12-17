@@ -322,8 +322,9 @@ estimate_stl <- function (y, trend.args, season.args, lowpass.args, iterations =
     x
   })
   season.args <- season.args[order(period)]
-  seas <- magrittr::set_names(as.list(rep(0, length(season.args))), sprintf("season_%s",
-                                                                  names(season.args) %||% map(season.args, function(x) x[["period"]])))
+  seas <- stats::setNames(as.list(rep(0, length(season.args))),
+                          sprintf("season_%s",
+                                  names(season.args) %||% purrr::map(season.args, function(x) x[["period"]])))
   if (length(season.args) > 0) {
     for (j in seq_len(iterations)) {
       for (i in seq_along(season.args)) {
@@ -457,9 +458,8 @@ shift_kl_max <- function( x ) {
   rmean <- purrr::map(densities, function(x) slider::slide_dbl(x,
                                                                mean,
                                                                .before = .size - 1,
-                                                               na.rm = TRUE)) %>%
-    purrr::transpose() %>%
-    purrr::map(unlist)
+                                                               na.rm = TRUE))
+  rmean <- purrr::map( purrr::transpose(rmean), unlist)
   kl <- purrr::map2_dbl( rmean[seq_len(lenx - .size)],
                          rmean[seq_len(lenx - .size) + .size],
                          function(x, y) sum(x * (log(x) - log(y)) * grid, na.rm = TRUE))

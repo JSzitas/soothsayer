@@ -23,21 +23,18 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
   # if we have an unkeyed table (as is case from within the soothsayer object)
   # we would crash here on the keyed version - thus we add a check.
   if( length(tsibble::key_vars(x)) != 0) {
-    features <- x %>%
-      as.data.frame() %>%
-      dplyr::group_by( !!!tsibble::key(x) ) %>%
-      dplyr::group_split()
+    features <- as.data.frame(x)
+    features <- dplyr::group_by(features,  !!!tsibble::key(x) )
+    features <- dplyr::group_split(features)
 
-    keys <- x %>%
-      as.data.frame() %>%
-      dplyr::select(!!!tsibble::key(x)) %>%
-      unlist %>%
-      unique()
+    keys <- as.data.frame(x)
+    keys <- dplyr::select(keys, !!!tsibble::key(x))
+    keys <- unique(unlist(keys))
 
     features <- suppressWarnings({
-      features %>%
-        furrr::future_map( transformer ) %>%
-        dplyr::bind_rows()
+      dplyr::bind_rows(
+        furrr::future_map(features, transformer )
+        )
     })
     # the early return saves us an otherwise unnecessary else clause
     return(cbind(keys, features))

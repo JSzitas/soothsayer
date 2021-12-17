@@ -34,33 +34,30 @@ ts_train_test <- function( ts_tbl,
   time_index <- tsibble::index_var( ts_tbl )
   key_var <- tsibble::key_vars(ts_tbl)
 
-  series <- ts_tbl %>%
-    tsibble::as_tibble() %>%
-    dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
-    dplyr::group_split() %>%
-    purrr::map( ~ handle_forecast_h(.x, forecast_h)  ) %>%
-    dplyr::bind_rows() %>%
-    dplyr::group_by( !!!tsibble::key(ts_tbl) ) %>%
-    dplyr::mutate( train = rlang::.data$index < max( .data$index) - forecast_h + 1) %>%
-    dplyr::select( -tidyselect::all_of(c("period")) ) %>%
-    dplyr::as_tibble() %>%
-    tsibble::as_tsibble( index = time_index, key = key_var )
+  series <- tsibble::as_tibble( ts_tbl)
+  series <- dplyr::group_by(series, !!!tsibble::key(ts_tbl) )
+  series <- dplyr::group_split(series)
+  series <- purrr::map(series, ~ handle_forecast_h(.x, forecast_h)  )
+  series <- dplyr::bind_rows(series)
+  series <- dplyr::group_by(series, !!!tsibble::key(ts_tbl) )
+  series <- dplyr::mutate(series, train = rlang::.data$index < max( .data$index) - forecast_h + 1)
+  series <- dplyr::select(series, -tidyselect::all_of(c("period")) )
+  series <- dplyr::as_tibble(series)
+  series <- tsibble::as_tsibble(series, index = time_index, key = key_var )
 
-  forecast_h <- series %>%
-    as.data.frame() %>%
-    dplyr::select( tidyselect::all_of( c("forecast_h", key_var ))) %>%
-    dplyr::distinct()
+  forecast_h <- dplyr::select( as.data.frame(series),
+                               tidyselect::all_of( c("forecast_h",
+                                                     key_var ))
+                               )
+  forecast_h <- dplyr::distinct(forecast_h)
 
-  series <- series %>%
-    dplyr::select( -tidyselect::all_of("forecast_h") )
+  series <- dplyr::select(series, -tidyselect::all_of("forecast_h") )
 
-  train <- series %>%
-    dplyr::filter( train ) %>%
-    dplyr::select( -tidyselect::all_of( "train" ) )
+  train <- dplyr::filter(series, train )
+  train <- dplyr::select(train, -tidyselect::all_of( "train" ) )
 
-  test <- series %>%
-    dplyr::filter( !train ) %>%
-    dplyr::select( -tidyselect::all_of( "train" ) )
+  test <- dplyr::filter(series,  !train )
+  series <- dplyr::select(series, -tidyselect::all_of( "train" ) )
 
   return(list( train = train, test = test, forecast_h = forecast_h ))
 }
@@ -71,8 +68,7 @@ fit_models <- function( train,
   values_from <- tsibble::measured_vars(train)
   model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from))  )
 
-  mdls <- train %>%
-    fabletools::model( !!!model_set, .safely = TRUE )
+  mdls <- fabletools::model(train, !!!model_set, .safely = TRUE )
   return( list( models = mdls))
 }
 
@@ -114,11 +110,11 @@ soothsayer_forecaster <- function( series,
                                                   ets = fable::ETS,
                                                   nnetar = fable::NNETAR,
                                                   croston = fable::CROSTON,
-                                                  ar = fable::AR,
-                                                  ar1 = fix_model_parameters(fable::AR, order(1)),
-                                                  ar3 = fix_model_parameters(fable::AR, order(3)),
-                                                  arma11 = fix_model_parameters(fable::ARIMA, pdq(1,0,1)),
-                                                  arma31 = fix_model_parameters(fable::ARIMA, pdf(3,0,1))
+                                                  ar = fable::AR
+                                                  # ar1 = fix_model_parameters(fable::AR, order(1)),
+                                                  # ar3 = fix_model_parameters(fable::AR, order(3)),
+                                                  # arma11 = fix_model_parameters(fable::ARIMA, pdq(1,0,1)),
+                                                  # arma31 = fix_model_parameters(fable::ARIMA, pdf(3,0,1))
                                                   ),
                                    forecast_h = random_forecast_h,
                                    save_forecast_experiment = TRUE,

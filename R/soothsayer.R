@@ -55,7 +55,7 @@ train_soothsayer <- function(.data, specials, ...) {
   fitted_vals <- purrr::map(
     model_fits,
     function(model_fit) {
-      as.data.frame(fitted(model_fit[[1]]))[[".fitted"]]
+      as.data.frame(stats::fitted(model_fit[[1]]))[[".fitted"]]
     }
   )
   weighed_fits <- purrr::map2(
