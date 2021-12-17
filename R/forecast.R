@@ -81,6 +81,14 @@ forecast_models <- function( test,
   fcst <- fabletools::forecast( fitted_models, new_data = test, times = 0 )
   return( list( forecasts = fcst) )
 }
+
+all_accuracy_measures <- list(
+  fabletools::point_accuracy_measures,
+  fabletools::interval_accuracy_measures,
+  fabletools::distribution_accuracy_measures,
+  fabletools::directional_accuracy_measures
+)
+
 #' Soothsayer oracle training utilities
 #' @description Utilities for training oracle models
 #' @param series The series to use for modelling, a \link[tsibble]{tsibble}. Note that this must only have a
@@ -106,7 +114,12 @@ soothsayer_forecaster <- function( series,
                                                   ets = fable::ETS,
                                                   nnetar = fable::NNETAR,
                                                   croston = fable::CROSTON,
-                                                  ar = fable::AR),
+                                                  ar = fable::AR,
+                                                  ar1 = fix_model_parameters(fable::AR, order(1)),
+                                                  ar3 = fix_model_parameters(fable::AR, order(3)),
+                                                  arma11 = fix_model_parameters(fable::ARIMA, pdq(1,0,1)),
+                                                  arma31 = fix_model_parameters(fable::ARIMA, pdf(3,0,1))
+                                                  ),
                                    forecast_h = random_forecast_h,
                                    save_forecast_experiment = TRUE,
                                    save_outfile = "1",
@@ -137,7 +150,8 @@ soothsayer_forecaster <- function( series,
                  nthreads = save_n_threads)
   }
   accuracies <- fabletools::accuracy(forecasts[["forecasts"]],
-                                     train_test[["test"]])
+                                     train_test[["test"]],
+                                     measures = all_accuracy_measures)
   accuracies <- dplyr::left_join( accuracies, train_test[["forecast_h"]], by = "key" )
 
   if( save_forecast_experiment ) {
