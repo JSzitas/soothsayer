@@ -1,5 +1,4 @@
 train_soothsayer <- function(.data, specials, ...) {
-
   feature_set <- specials$feature_set[[1]]
 
   target <- tsibble::measured_vars(.data)
@@ -13,46 +12,70 @@ train_soothsayer <- function(.data, specials, ...) {
   rule_models <- purrr::map(rules, rlang::f_lhs)
   rule_rhs <- purrr::map(rules, rlang::f_rhs)
 
-  if( !is.null(rules) ) {
-    fit_rules <- purrr::map( rule_rhs,
-                             ~ rlang::eval_tidy( .x, data = feature_df))
+  if (!is.null(rules)) {
+    fit_rules <- purrr::map(
+      rule_rhs,
+      ~ rlang::eval_tidy(.x, data = feature_df)
+    )
     names(fit_rules) <- rlang::eval_bare(rule_models)
     matched_models <- unlist(fit_rules)
-    matched_models_rule <- names(matched_models[ which(matched_models) ])
+    matched_models_rule <- names(matched_models[which(matched_models)])
   }
   # we have to set this to NULL by default
   oracle_weights <- NULL
-  if(!is.null(oracle)) {
-
-    matched_models_oracle <- ifelse( !is.null(oracle),
-                                     predict(oracle, feature_df),
-                                     NULL)
-    if(oracle[["emit_type"]] == "weights") {
+  if (!is.null(oracle)) {
+    matched_models_oracle <- ifelse(!is.null(oracle),
+      predict(oracle, feature_df),
+      NULL
+    )
+    if (oracle[["emit_type"]] == "weights") {
       oracle_weights <- c(matched_models_oracle)
       matched_models_oracle <- names(matched_models_oracle)
     }
   }
-  matched_models <- model_resolver( rule_models = matched_models_rule,
-                                    oracle_models = matched_models_oracle,
-                                    choose_first = resolution[["which_model"]],
-                                    resolution = resolution[["precedence"]] )
+  matched_models <- model_resolver(
+    rule_models = matched_models_rule,
+    oracle_models = matched_models_oracle,
+    choose_first = resolution[["which_model"]],
+    resolution = resolution[["precedence"]]
+  )
 
-  models_to_fit <- aliases[ matched_models ]
-  model_defs <- purrr::map( models_to_fit, ~ .x( !!rlang::sym(target)))
+  models_to_fit <- aliases[matched_models]
+  model_defs <- purrr::map(models_to_fit, ~ .x(!!rlang::sym(target)))
 
   model_fits <- fabletools::model(.data,
-                                  !!!model_defs, .safely = TRUE)
-  model_weights <- if( length(model_fits) > 1 ) {
+    !!!model_defs,
+    .safely = TRUE
+  )
+  model_weights <- if (length(model_fits) > 1) {
     specials$combiner[[1]](model_fits, oracle_weights)
   } else {
-   1
+    1
   }
+  fitted_vals <- purrr::map(
+    model_fits,
+    function(model_fit) {
+      as.data.frame(fitted(model_fit[[1]]))[[".fitted"]]
+    }
+  )
+  weighed_fits <- purrr::map2(
+    fitted_vals, model_weights,
+    function(fit, weight) {
+      fit * weight
+    }
+  )
+  fit_val <- purrr::reduce( weighed_fits, .f = `+` )
+  resid <- unlist(as.data.frame(.data)[[target]]) - fit_val
 
   structure(
-    list( features = feature_df,
-          rules = fit_rules,
-          models = model_fits,
-          model_weights = model_weights),
+    list(
+      features = feature_df,
+      rules = fit_rules,
+      models = model_fits,
+      fitted = fit_val,
+      resid = resid,
+      model_weights = model_weights
+    ),
     class = "soothsayer"
   )
 }
@@ -65,28 +88,38 @@ specials_soothsayer <- fabletools::new_specials(
     }
     return(rules)
   },
-  oracle = function( trained_oracle = random_oracle ) {
+  oracle = function(trained_oracle = random_oracle) {
     return(trained_oracle)
   },
-  model_aliases = function( aliases = soothsayer_alias_set ) {
-    if( is.null(aliases) ) return( soothsayer_alias_set )
+  model_aliases = function(aliases = soothsayer_alias_set) {
+    if (is.null(aliases)) {
+      return(soothsayer_alias_set)
+    }
     aliases
   },
   feature_set = function(features = NULL) {
-    if( is.null(features) ) return(soothsayer_feature_set)
+    if (is.null(features)) {
+      return(soothsayer_feature_set)
+    }
     features
   },
   combiner = function(combiner = combiner_mean, prior_weights = NULL, metric = rmse, ...) {
-    purrr::partial( .f = combiner, prior_weights = prior_weights, metric = metric, ...)
+    purrr::partial(.f = combiner, prior_weights = prior_weights, metric = metric, ...)
   },
-  resolution = function( model = "all", rule_vs_oracle = "both" ) {
+  resolution = function(model = "all", rule_vs_oracle = "both") {
     # add argument checking
-    fail_if_cond( !( model %in% c("first", "all")),
-                  "resolution model must be 'all' or 'first'." )
-    fail_if_cond( !( rule_vs_oracle %in% c("rule", "oracle","both")),
-                  "resolution rule_vs_oracle must be 'rule' or 'oracle' or 'both'." )
-    list( which_model = model,
-          precedence = rule_vs_oracle )
+    fail_if_cond(
+      !(model %in% c("first", "all")),
+      "resolution model must be 'all' or 'first'."
+    )
+    fail_if_cond(
+      !(rule_vs_oracle %in% c("rule", "oracle", "both")),
+      "resolution rule_vs_oracle must be 'rule' or 'oracle' or 'both'."
+    )
+    list(
+      which_model = model,
+      precedence = rule_vs_oracle
+    )
   },
   xreg = function(...) {
     # This model doesn't support exogenous regressors, time to error.
