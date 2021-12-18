@@ -1,16 +1,6 @@
 test_that("Compute features", {
   transformer <- generate_feature_transformer(list(mean, sd), "value")
   expect_equal(class(transformer), "function")
-  expect_equal(
-    body(transformer),
-    body(function(.x) {
-      .features <- purrr::map(
-        safe_set,
-        function(.f) .f(.x[[values_from]])
-      )
-      unlist(.features)
-    })
-  )
 
   features <- compute_features(tsibbledata::aus_livestock)
   features_row_1 <- structure(list(
