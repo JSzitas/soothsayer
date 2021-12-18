@@ -29,7 +29,7 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
 
     keys <- as.data.frame(x)
     keys <- dplyr::select(keys, !!!tsibble::key(x))
-    keys <- unique(unlist(keys))
+    keys <- dplyr::distinct(keys)
 
     features <- suppressWarnings({
       dplyr::bind_rows(
