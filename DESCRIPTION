@@ -1,7 +1,7 @@
 Package: soothsayer
 Type: Package
 Title: Tidy Time Series Forecast Model Selection
-Version: 0.2.1
+Version: 0.3.1
 Author: Juraj Szitas
 Maintainer: Juraj Szitas <szitas.juraj13@gmail.com>
 Description: More about what it does (maybe more than one line)
@@ -24,11 +24,12 @@ Imports:
     urca,
     Rcatch22,
     slider,
-    tidyselect,
+    distributional,
     fabletools,
+    tibble,
+    tidyselect,
     fs,
     qs,
-    distributional,
     generics
 RoxygenNote: 7.1.2
 Suggests: 

@@ -2,6 +2,7 @@
 ^\.Rproj\.user$
 ^README\.Rmd$
 ^experiments$
+^experiment.*$
 ^nonstandard_data$
 ^LICENSE\.md$
 ^\.github$

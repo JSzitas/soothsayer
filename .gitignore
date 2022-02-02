@@ -4,4 +4,4 @@
 .Ruserdata
 ^data$
 .qs$
-
+^experiment.*$
