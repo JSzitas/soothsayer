@@ -1,7 +1,9 @@
-test_that("Compute features", {
+test_that("Generating a transformer works", {
   transformer <- generate_feature_transformer(list(mean, sd), "value")
   expect_equal(class(transformer), "function")
+})
 
+test_that("Computing features on a keyed tsibble works", {
   features <- compute_features(tsibbledata::aus_livestock)
   features_row_1 <- structure(list(
     Animal = structure(1L, .Label = c(
@@ -82,6 +84,50 @@ test_that("Compute features", {
     ...27 = NA_real_
   ), row.names = 54L, class = "data.frame")
 
-  expect_equal(features[1,], features_row_1, tolerance = 0.05 )
-  expect_equal(features[54,], features_row_last, tolerance = 0.05 )
+  expect_equal(features[1, ], features_row_1, tolerance = 0.05)
+  expect_equal(features[54, ], features_row_last, tolerance = 0.05)
+})
+
+test_that("Computing features on an unkeyed tsibble works", {
+  pelt <- tsibbledata::pelt
+  pelt <- dplyr::select(pelt, Year, Lynx)
+
+  features <- compute_features(pelt)
+  expected <- structure(list(
+    .entropy = 0.706583107025807, .lumpiness = 0.242960275179409,
+    .nonlinearity = 0.175880583162613, .hurst = 0.985716059317091,
+    .stability = 0.10367038279862, .box_pierce = 54.4593873885474,
+    .acf1 = 0.773598608108594, acf10 = 2.47437850000159, .diff1_acf1 = 0.543446904897402,
+    diff1_acf10 = 1.79047621510189, .diff2_acf1 = 0.015646804618152,
+    diff2_acf10 = 0.283571922936066, .season_acf1 = 0.587332343222113,
+    .intermittent = 0, .nonzero_squared_cv = 0.443193745539475,
+    .zero_start_prop = 0, .zero_end_prop = 0, .spectral = 0.706583107025808,
+    .arch_stat = 0.475619736928952, .longest_flat_spot = 4, .n_crossing_points = 18,
+    .ljung_box = 56.274700301499, .unitroot_kpss = 0.0453980228052238,
+    .ndiffs = 3, .nsdiffs = 0, .unitroot_pp = -34.9374916907255,
+    .shift_kl_max = 1.14520835504965, .shift_kl_index = 23, .shift_level_max = 22153.5,
+    .shift_level_index = 5, .shift_var_max = 646693288.888889,
+    .shift_var_index = 15, .positive = 1, .negative = 0, .zeros = 0,
+    .continuous = 1, .count = 1, .length = 91, .period = 10,
+    .boxcox_lambda_guerrero = 0.182351816187663, .DN_HistogramMode_5 = -0.929291932720436,
+    .DN_HistogramMode_10 = -1.13115296490138, .CO_f1ecac = 2,
+    .CO_FirstMin_ac = 5, .CO_HistogramAMI_even_2_5 = 0.150069414038293,
+    .CO_trev_1_num = -0.221360343874331, .MD_hrv_classic_pnn40 = 0.922222222222222,
+    .SB_BinaryStats_mean_longstretch1 = 7, .SB_TransitionMatrix_3ac_sumdiagcov = 0.00777777777777778,
+    .PD_PeriodicityWang_th0_01 = 9, .CO_Embed2_Dist_tau_d_expfit_meandiff = 0.188425015043199,
+    .IN_AutoMutualInfoStats_40_gaussian_fmmi = 2, .FC_LocalSimple_mean1_tauresrat = 1,
+    .DN_OutlierInclude_p_001_mdrmd = -0.0659340659340659, .DN_OutlierInclude_n_001_mdrmd = 0.0329670329670331,
+    .SP_Summaries_welch_rect_area_5_1 = 0.269175107533045, .SB_BinaryStats_diff_longstretch0 = 6,
+    .SB_MotifThree_quantile_hh = 1.91853800012346, .SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1 = 0.235294117647059,
+    .SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1 = 0.558823529411765,
+    .SP_Summaries_welch_rect_centroid = 0.638136007760469, .FC_LocalSimple_mean3_stderr = 1.09001747295146
+  ), class = "data.frame", row.names = c(
+    NA,
+    -1L
+  ))
+
+  features_w_specified_val_col <- compute_features(pelt, values_from = "Lynx")
+
+  expect_equal( features, expected, tolerance = 0.05 )
+  expect_equal( features, features_w_specified_val_col, tolerance = 0.05 )
 })
