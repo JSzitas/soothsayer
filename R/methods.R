@@ -12,9 +12,9 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
                                          model[[1]],
                                          new_data = new_data,
                                          h = h,
-                                         times = 0,
-                                         bootstrap = FALSE,
-                                         seed = NULL,
+                                         times = times,
+                                         bootstrap = bootstrap,
+                                         seed = seed,
                                          ...),
                                        model = name)
                                    })
@@ -72,14 +72,59 @@ forecast.soothsayer <- function( object,
   # screwed either way. lets not do that.
   distributional::dist_degenerate( fcst_means )
 }
+#' @importFrom stats residuals
+#' @export
+residuals.soothsayer <- function( object, ... ) {
+  object[["residuals"]]
+}
+#' @importFrom stats fitted
+#' @export
+fitted.soothsayer <- function( object, ... ) {
+  object[["fitted"]]
+}
+#' @importFrom generics tidy
+#' @export
+tidy.soothsayer <- function( x, ... ) {
 
-# residuals.soothsayer
-# fitted.soothsayer
-# glance.soothsayer
-# tidy.soothsayer
-# #report.soothsayer
-# model_sum.soothsayer
-# refit.soothsayer
+  models <- purrr::map_chr( x[["models"]], ~ class(.x[[1]][["fit"]]))
+  models <- c(models, "all")
+  model_weights <- x[["model_weights"]]
+  model_weights <- c(model_weights,1)
+  residual_mean <- purrr::map_dbl( x[["models"]],
+                                   ~ mean( residuals(.x[[1]][["fit"]]),
+                                           na.rm = TRUE)
+                                   )
+  residual_mean <- c( residual_mean, mean( x[["resid"]], na.rm = TRUE) )
+  residual_rmse <- purrr::map_dbl( x[["models"]],
+                              ~ sqrt( mean( residuals(.x[[1]][["fit"]])^2,
+                                            na.rm = TRUE ))
+                              )
+  residual_rmse <- c( residual_rmse,
+                      sqrt( mean( x[["resid"]]^2, na.rm = TRUE))
+                      )
 
+  tibble::tibble( models = models,
+                  weights = model_weights,
+                  avg_residual = residual_mean,
+                  rmse_residual = residual_rmse )
+}
+#' @importFrom rlang .data
+#' @importFrom generics glance
+#' @export
+glance.soothsayer <- function(x, ...) {
+  x <- tidy(x)
+  fit_rmse <- dplyr::filter( x, .data$models == "all")[["rmse_residual"]]
+  x <- dplyr::filter( x, .data$models != "all" )
+  total_models <- nrow(x)
+  active_models <- sum(x[["weights"]] > 0)
+  max_weight <- max(x[["weights"]])
 
-
+  tibble::tibble(
+    total_models = total_models,
+    active_models = active_models,
+    max_weight = max_weight,
+    fit_rmse = fit_rmse,
+    model_redundancy = total_models - active_models
+    )
+}
+# refit
