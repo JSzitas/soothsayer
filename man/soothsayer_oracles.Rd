@@ -2,44 +2,24 @@
 % Please edit documentation in R/oracle.R
 \name{new_soothsayer_oracle}
 \alias{new_soothsayer_oracle}
-\alias{fit.soothsayer_oracle}
 \alias{predict.soothsayer_oracle}
-\title{Defne a soothsayer oracle}
+\title{Define a soothsayer oracle}
 \usage{
 new_soothsayer_oracle(
   oracle_name = NULL,
-  feature_data = NULL,
-  series_data = NULL,
-  feature_set = soothsayer_feature_set,
-  forecast_accuracies = NULL,
-  forecaster = soothsayer_forecaster,
-  train = function(accuracies, features, ...) {    
-    rlang::abort("This oracle must have a training method.") },
+  trained_oracle = NULL,
   predict = function(...) {    
     rlang::abort("This oracle must have a prediction method.") },
   emits = "models",
   ...
 )
 
-\method{fit}{soothsayer_oracle}(object, ...)
-
 \method{predict}{soothsayer_oracle}(object, features, ...)
 }
 \arguments{
 \item{oracle_name}{= NULL,}
 
-\item{feature_data}{= NULL, # either the full feature data,}
-
-\item{series_data}{= NULL, # or series data}
-
-\item{feature_set}{= soothsayer_feature_set, # always a feature set - this is necessary as
-this will be checked against}
-
-\item{forecast_accuracies}{= NULL, # you can have forecast accuracies}
-
-\item{forecaster}{= soothsayer_forecaster, # use our default forecastng engine}
-
-\item{train}{The training function for your oracle.}
+\item{trained_oracle}{A trained oracle (if needed) for making predictions.}
 
 \item{predict}{The prediction for your oracle.}
 
