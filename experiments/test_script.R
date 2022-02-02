@@ -6,28 +6,22 @@ pkgload::load_all()
 
 
 random_oracle <-  new_soothsayer_oracle( oracle_name = "random_oracle",
-                                         feature_data = c(1),
-                                         forecast_accuracies = c(1),
-                                         train = function( accuracies = NULL, features = NULL ) {
-                                           list( models = c("ar",
-                                                            "arima",
-                                                            "croston",
-                                                            "ets",
-                                                            "nnetar",
-                                                            "rw",
-                                                            "snaive",
-                                                            "theta")
-                                                 )
-                                         },
                                          predict = function( oracle, features ) {
-                                           set.seed(ncol(features))
-                                           sample( oracle$models, 1 )
+                                           models = c("ar",
+                                                      "arima",
+                                                      # "croston",
+                                                      "ets",
+                                                      "nnetar",
+                                                      "rw",
+                                                      "snaive",
+                                                      "theta")
+
+                                           sample( models, 1 )
                                          }
 )
 
-random_oracle <- fit( random_oracle )
 
-# random_pred <- predict(random_oracle)
+random_pred <- predict(random_oracle)
 #
 #
 # ranger_oracle <- new_soothsayer_oracle( oracle_name = "ranger_oracle",
