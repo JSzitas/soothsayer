@@ -35,5 +35,5 @@ new_soothsayer_oracle <- function( oracle_name = NULL,
 #' @export
 #' @rdname soothsayer_oracles
 predict.soothsayer_oracle <-function( object, features, ... ) {
-  object$predict( object$trained_oracle, features )
+  object$predict( object$trained_oracle, features, ... )
 }
