@@ -48,8 +48,9 @@ forecast.soothsayer <- function( object,
                 fcst <- fabletools::forecast(
                   .x[[1]],
                   new_data = new_data,
-                  bootstrap = FALSE,
-                  times = 0, ...)
+                  bootstrap = bootstrap,
+                  times = times,
+                  ...)
                   get_distribution(fcst)
                 }
   )
