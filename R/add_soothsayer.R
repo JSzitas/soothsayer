@@ -1,11 +1,15 @@
 #' Create soothsayer from existing models
 #'
-#' @description Add a soothsayer to an existing **mable** wthout reestimating models
+#' @description Add a soothsayer to an existing **mable** wthout reestimating models which are available.
 #' @param mable The mable to add soothsayer to.
 #' @param ... The soothsayer to add - supports multiple soothsayers.
 #' @return A mable.
+#' @details This is intended to steamline adding soothsayer to existing mables - either as a model selector,
+#' as ensembler, or anything else you wish. The models are not reestimated - but the missing models should be (although they
+#' are only added to soothsayer currently, not the baseline mable).
+#' @note Might be broken for multiple soothsayer/time series combinations.
+#' @export
 #'
-
 add_soothsayer <- function(mable, ...) {
   .data <- mable[[1]][[1]][["data"]]
 
