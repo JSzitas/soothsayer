@@ -1,7 +1,6 @@
 estimate_soothsayer <- function( .data, specials, ... ) {
 
   feature_set <- specials$feature_set[[1]]
-
   target <- tsibble::measured_vars(.data)
   feature_df <- compute_features(.data, feature_set, values_from = target)
 
@@ -9,6 +8,8 @@ estimate_soothsayer <- function( .data, specials, ... ) {
   rules <- specials$rules[[1]]
   oracle <- specials$oracle[[1]]
   resolution <- specials$resolution[[1]]
+  # add any potential xreg
+  .data <- dplyr::bind_cols(.data, specials$xreg[[1]])
 
   rule_models <- purrr::map(rules, rlang::f_lhs)
   rule_rhs <- purrr::map(rules, rlang::f_rhs)
@@ -107,8 +108,9 @@ specials_soothsayer <- fabletools::new_specials(
   oracle = function(trained_oracle = random_oracle) {
     return(trained_oracle)
   },
-  model_aliases = function(aliases = soothsayer_alias_set) {
-    if (is.null(aliases)) {
+  model_aliases = function(...) {
+    aliases <- list(...)
+    if ( length(aliases) < 1) {
       return(soothsayer_alias_set)
     }
     aliases
@@ -138,8 +140,19 @@ specials_soothsayer <- fabletools::new_specials(
     )
   },
   xreg = function(...) {
-    # This model doesn't support exogenous regressors, time to error.
-    stop("Exogenous regressors aren't supported by `soothsayer()`")
+    dots <- rlang::enexprs(...)
+    env <- purrr::map(rlang::enquos(...), rlang::get_env)
+    env[purrr::map_lgl(env, purrr::compose(rlang::is_empty, rlang::env_parents))] <- NULL
+    env <- if (!rlang::is_empty(env))
+      rlang::get_env(env[[1]])
+    else base_env()
+    constants <- purrr::map_lgl(dots, inherits, "numeric")
+    constant_given <- any(purrr::map_lgl(dots[constants], `%in%`,
+                                         -1:1))
+    model_formula <- rlang::new_formula(lhs = NULL, rhs = purrr::reduce(dots,
+                                                                        function(.x, .y) rlang::call2("+", .x, .y)))
+    xreg <- stats::model.frame(model_formula, data = env, na.action = stats::na.pass)
+    list(xreg = if (NCOL(xreg) == 0) NULL else xreg)
   },
   .noestimate = function(no_estimate = FALSE){ return(no_estimate) },
   .required_specials = c("feature_set", "model_aliases", "combiner", "resolution",".noestimate")
