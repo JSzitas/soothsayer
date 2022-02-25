@@ -24,6 +24,7 @@ estimate_soothsayer <- function( .data, specials, ... ) {
   }
   # we have to set this to NULL by default
   oracle_weights <- NULL
+  matched_models_oracle <- NULL
   if (!is.null(oracle)) {
     matched_models_oracle <- ifelse(!is.null(oracle),
                                     predict(oracle, feature_df),
