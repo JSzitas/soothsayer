@@ -4,8 +4,8 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
                                  ...)
 {
   weights <- x[["model_weights"]]
-  names(weights) <- names(x[["models"]])
-  generated_distrs <- purrr::imap( x[["models"]],
+  names(weights) <- names(x[["model_fits"]])
+  generated_distrs <- purrr::imap( x[["model_fits"]],
                                    function(model, name) {
                                      dplyr::bind_cols(
                                        generate(
@@ -43,7 +43,7 @@ forecast.soothsayer <- function( object,
                                  bootstrap = FALSE,
                                  times = 100,
                                  ... ) {
-  fcsts <- purrr::map( object[["models"]],
+  fcsts <- purrr::map( object[["model_fits"]],
               function(.x) {
                 fcst <- fabletools::forecast(
                   .x[[1]],
@@ -55,7 +55,7 @@ forecast.soothsayer <- function( object,
                 }
   )
   # if we only have one model, dont worry about anything else :)
-  if( length(object[["models"]]) == 1 ) {
+  if( length(object[["model_fits"]]) == 1 ) {
     return(fcsts[[1]][[1]])
   }
   # otherwise, get weights

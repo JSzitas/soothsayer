@@ -114,7 +114,7 @@ fabletools::model(
     combiner(combiner_lm))
 ) -> fitted
 
-generated <- generate(fitted)
+# generated <- generate(fitted)
 forecasted <- forecast(fitted, new_data = test)
 # library(fabletools)
 # autoplot(forecasted, test)
