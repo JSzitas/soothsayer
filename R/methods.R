@@ -22,11 +22,13 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
     dists <- dplyr::mutate(dist, .sim = .data$.sim * weights[name])
     tsibble::as_tibble(dists)
   })
-  dists <- dplyr::group_by( dplyr::bind_rows(dists), .data$Month)
+  # have to group by first column - which is, happily, the time index variable
+  index_var <- as.name(names(dists[[1]])[1])
+  dists <- dplyr::group_by( dplyr::bind_rows(dists), !!index_var)
   dists <- dplyr::summarise( dists,
                              .sim = sum(.data$.sim),
                              .rep = unique(.data$.rep))
-  tsibble::as_tsibble(dists, index = "Month")
+  tsibble::as_tsibble(dists, index = names(dists)[1])
 }
 # to be fair, this is a method over a fable, but I do not want to write a generic for it
 get_distribution <- function(x) {
