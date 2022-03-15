@@ -87,21 +87,21 @@ fitted.soothsayer <- function( object, ... ) {
 #' @export
 tidy.soothsayer <- function( x, ... ) {
 
-  models <- purrr::map_chr( x[["models"]], ~ class(.x[[1]][["fit"]]))
+  models <- purrr::map_chr( x[["model_fits"]], ~ class(.x[[1]][["fit"]]))
   models <- c(models, "all")
   model_weights <- x[["model_weights"]]
   model_weights <- c(model_weights,1)
-  residual_mean <- purrr::map_dbl( x[["models"]],
+  residual_mean <- purrr::map_dbl( x[["model_fits"]],
                                    ~ mean( residuals(.x[[1]][["fit"]]),
                                            na.rm = TRUE)
                                    )
-  residual_mean <- c( residual_mean, mean( x[["resid"]], na.rm = TRUE) )
+  residual_mean <- c( residual_mean, mean( x[["residuals"]], na.rm = TRUE) )
   residual_rmse <- purrr::map_dbl( x[["models"]],
                               ~ sqrt( mean( residuals(.x[[1]][["fit"]])^2,
                                             na.rm = TRUE ))
                               )
   residual_rmse <- c( residual_rmse,
-                      sqrt( mean( x[["resid"]]^2, na.rm = TRUE))
+                      sqrt( mean( x[["residuals"]]^2, na.rm = TRUE))
                       )
 
   tibble::tibble( models = models,
@@ -117,8 +117,8 @@ glance.soothsayer <- function(x, ...) {
   fit_rmse <- dplyr::filter( x, .data$models == "all")[["rmse_residual"]]
   x <- dplyr::filter( x, .data$models != "all" )
   total_models <- nrow(x)
-  active_models <- sum(x[["weights"]] > 0)
-  max_weight <- max(x[["weights"]])
+  active_models <- sum(x[["model_weights"]] > 0)
+  max_weight <- max(x[["model_weights"]])
 
   tibble::tibble(
     total_models = total_models,

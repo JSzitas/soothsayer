@@ -5,23 +5,24 @@ pkgload::load_all()
 # readRDS("data/soothsayer_default_feature_tbl.rds") -> features
 
 
-random_oracle <-  new_soothsayer_oracle( oracle_name = "random_oracle",
-                                         predict = function( oracle, features ) {
-                                           models = c("ar",
-                                                      "arima",
-                                                      # "croston",
-                                                      "ets",
-                                                      "nnetar",
-                                                      "rw",
-                                                      "snaive",
-                                                      "theta")
-
-                                           sample( models, 1 )
-                                         }
-)
-
-
-random_pred <- predict(random_oracle)
+# random_oracle <-  new_soothsayer_oracle( oracle_name = "random_oracle",
+#                                          predict = function( oracle, features ) {
+#                                            models = c("ar",
+#                                                       "arima",
+#                                                       # "croston",
+#                                                       "ets",
+#                                                       "nnetar",
+#                                                       "rw",
+#                                                       "snaive"
+#                                                       # "theta"
+#                                                       )
+#
+#                                            sample( models, 1 )
+#                                          }
+# )
+#
+#
+# random_pred <- predict(random_oracle)
 #
 #
 # ranger_oracle <- new_soothsayer_oracle( oracle_name = "ranger_oracle",
@@ -89,10 +90,10 @@ soothsayer_model <-
 
 ex_data <- tsibbledata::aus_livestock %>%
   as.data.frame() %>%
-  dplyr::group_by(Month) %>%
+  dplyr::group_by(Month, State) %>%
   dplyr::summarise(count = sum(Count)) %>%
   dplyr::ungroup() %>%
-  tsibble::as_tsibble(index = "Month")
+  tsibble::as_tsibble(index = "Month", key= "State")
 
 train <- dplyr::filter(ex_data, Month < tsibble::yearmonth("2017 Jan"))
 test <- dplyr::filter( ex_data, Month > tsibble::yearmonth("2017 Jan") )
@@ -104,18 +105,15 @@ fabletools::model(
     arima ~ .length > 12,
     ar ~ TRUE,
     ets ~ .length > 15
-  ) + oracle(random_oracle) +
-    combiner(combiner_greedy_stacking) ),
-  soothsayer2 = soothsayer(count ~ rules(
-    arima ~ .length > 12,
-    ar ~ TRUE,
-    ets ~ .length > 15
-  ) + oracle(random_oracle) +
-    combiner(combiner_lm))
+  ) + combiner(combiner_greedy_stacking) )
 ) -> fitted
+
+# train_acc <- fabletools::accuracy(fitted)
 
 # generated <- generate(fitted)
 forecasted <- forecast(fitted, new_data = test)
+fcst_acc <- fabletools::accuracy( forecasted, test )
+
 # library(fabletools)
 # autoplot(forecasted, test)
 
