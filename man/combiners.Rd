@@ -2,7 +2,7 @@
 % Please edit documentation in R/combiners.R
 \name{combiner_greedy_stacking}
 \alias{combiner_greedy_stacking}
-\alias{combiner_mean}
+\alias{combiner_equal}
 \alias{combiner_custom}
 \alias{combiner_oracle}
 \alias{combiner_lm}
@@ -16,7 +16,7 @@ combiner_greedy_stacking(
   ...
 )
 
-combiner_mean(.models, prior_weights = NULL, oracle_weights = NULL, ...)
+combiner_equal(.models, prior_weights = NULL, oracle_weights = NULL, ...)
 
 combiner_custom(.models, prior_weights = NULL, ...)
 

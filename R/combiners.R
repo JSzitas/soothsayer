@@ -28,20 +28,24 @@ combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rms
 }
 #' @rdname combiners
 #' @export
-combiner_mean <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
-
+combiner_equal <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
   avg_weights <- rep(1, length(.models))/length(.models)
   colMeans( rbind( avg_weights, prior_weights))
 }
 #' @rdname combiners
 #' @export
 combiner_custom <- function(.models, prior_weights = NULL, ... ) {
+  if(all(is.null(prior_weights))) {
+    return(combiner_equal(.models))
+  }
   prior_weights/sum(prior_weights)
 }
 #' @rdname combiners
 #' @export
 combiner_oracle <- function(.models, prior_weights = NULL, oracle_weights = NULL, ... ) {
-  oracle_weights/sum(oracle_weights)
+  oracle_weights <- oracle_weights/sum(oracle_weights)
+  prior_weights <- prior_weights/sum(prior_weights)
+  colMeans( rbind( oracle_weights, prior_weights))
 }
 #' @rdname combiners
 #' @export
@@ -57,6 +61,7 @@ combiner_lm <- function(.models, prior_weights = NULL, oracle_weights = NULL, ..
   y <- y[[measured_var]]
 
   weights <- stats::coef(stats::lm(y ~ Z-1))
+  weights[is.na(weights)] <- 0
   weights <- weights/sum(weights)
   names(weights) <- NULL
   colMeans( rbind( weights, prior_weights))
