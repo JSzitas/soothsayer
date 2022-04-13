@@ -98,36 +98,30 @@ tidy.soothsayer <- function( x, ... ) {
                                            na.rm = TRUE)
                                    )
   residual_mean <- c( residual_mean, mean( x[["residuals"]], na.rm = TRUE) )
-  residual_rmse <- purrr::map_dbl( x[["models"]],
-                              ~ sqrt( mean( residuals(.x[[1]][["fit"]])^2,
-                                            na.rm = TRUE ))
-                              )
-  residual_rmse <- c( residual_rmse,
-                      sqrt( mean( x[["residuals"]]^2, na.rm = TRUE))
-                      )
 
   tibble::tibble( models = models,
                   weights = model_weights,
-                  avg_residual = residual_mean,
-                  rmse_residual = residual_rmse )
+                  avg_residual = residual_mean )
 }
 #' @importFrom rlang .data
 #' @importFrom generics glance
 #' @export
 glance.soothsayer <- function(x, ...) {
   x <- tidy(x)
-  fit_rmse <- dplyr::filter( x, .data$models == "all")[["rmse_residual"]]
   x <- dplyr::filter( x, .data$models != "all" )
   total_models <- nrow(x)
-  active_models <- sum(x[["model_weights"]] > 0)
-  max_weight <- max(x[["model_weights"]])
+  active_models <- sum(x[["weights"]] > 0.01)
+  max_weight <- max(x[["weights"]])
 
   tibble::tibble(
     total_models = total_models,
     active_models = active_models,
     max_weight = max_weight,
-    fit_rmse = fit_rmse,
     model_redundancy = total_models - active_models
     )
 }
-# refit
+#' @importFrom generics refit
+#' @export
+refit.soothsayer <- function(x, new_data, specials = NULL, ... ) {
+  train_soothsayer( new_data, specials, ... )
+}

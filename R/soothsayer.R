@@ -30,7 +30,7 @@ specials_soothsayer <- fabletools::new_specials(
     }
     features
   },
-  combiner = function(combiner = combiner_mean, prior_weights = NULL, metric = rmse, ...) {
+  combiner = function(combiner = combiner_equal, prior_weights = NULL, metric = rmse, ...) {
     purrr::partial(.f = combiner, prior_weights = prior_weights, metric = metric, ...)
   },
   resolution = function(model = "all", rule_vs_oracle = "both") {
@@ -54,7 +54,7 @@ specials_soothsayer <- fabletools::new_specials(
     env[purrr::map_lgl(env, purrr::compose(rlang::is_empty, rlang::env_parents))] <- NULL
     env <- if (!rlang::is_empty(env))
       rlang::get_env(env[[1]])
-    else base_env()
+    else rlang::base_env()
     constants <- purrr::map_lgl(dots, inherits, "numeric")
     constant_given <- any(purrr::map_lgl(dots[constants], `%in%`,
                                          -1:1))
