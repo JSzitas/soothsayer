@@ -21,7 +21,7 @@ fabletools::model(
   ) +
     model_aliases(
       ar = fix_model_parameters(fable::AR, order(0:3) + 1 + Sheep),
-                   arima = fable::ARIMA) +
+      arima = fable::ARIMA) +
     combiner(combiner_greedy_stacking) +
     Sheep )
 ) -> fitted
