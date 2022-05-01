@@ -6,6 +6,7 @@
 \alias{combiner_custom}
 \alias{combiner_oracle}
 \alias{combiner_lm}
+\alias{combiner_after}
 \title{Combination functions which return combination weights}
 \usage{
 combiner_greedy_stacking(
@@ -23,6 +24,8 @@ combiner_custom(.models, prior_weights = NULL, ...)
 combiner_oracle(.models, prior_weights = NULL, oracle_weights = NULL, ...)
 
 combiner_lm(.models, prior_weights = NULL, oracle_weights = NULL, ...)
+
+combiner_after(.models, prior_weights = NULL, ...)
 }
 \arguments{
 \item{.models}{The fitted models - this is a named or unnamed list of fitted fable compatible models.}

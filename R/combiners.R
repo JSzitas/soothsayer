@@ -66,3 +66,26 @@ combiner_lm <- function(.models, prior_weights = NULL, oracle_weights = NULL, ..
   names(weights) <- NULL
   colMeans( rbind( weights, prior_weights))
 }
+#' @rdname combiners
+# See 'Zou, Yang (2004) "Combining time series models for forecasting"'
+# also at https://github.com/ykang/kllab-seminars/blob/master/2019_S2/20191018/
+# Zou%20and%20Yang%202004%20-%20Combining%20time%20series%20models%20for%20forecasting.pdf
+combiner_after <- function(.models, prior_weights = NULL, ... ) {
+  Z <- purrr::map(.models, ~ fitted(.x[[1]]) )
+  Z <- purrr::map(Z, as.data.frame)
+  Z <- purrr::map(Z, ~ .x[[".fitted"]] )
+  Z <- as.matrix(dplyr::bind_cols(Z))
+
+  y <- .models[[1]][[1]][["data"]]
+  measured_var <- tsibble::measured_vars(y)
+  y <- y[[measured_var]]
+
+}
+
+AFTER <- function(x )  {
+  x
+}
+
+roll_variance <- function(x) {
+  x
+}
