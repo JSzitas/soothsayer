@@ -99,7 +99,7 @@ tidy.soothsayer <- function( x, ... ) {
                                    )
   residual_mean <- c( residual_mean, mean( x[["residuals"]], na.rm = TRUE) )
 
-  tibble::tibble( models = models,
+  tsibble::tibble( models = models,
                   weights = model_weights,
                   avg_residual = residual_mean )
 }
@@ -113,7 +113,7 @@ glance.soothsayer <- function(x, ...) {
   active_models <- sum(x[["weights"]] > 0.01)
   max_weight <- max(x[["weights"]])
 
-  tibble::tibble(
+  tsibble::tibble(
     total_models = total_models,
     active_models = active_models,
     max_weight = max_weight,

@@ -15,21 +15,19 @@ Imports:
     purrr,
     rlang,
     stats,
-    generics,
     fabletools,
     dplyr,
     tsibble,
     fable,
     distributional,
-    furrr,
-    tseries,
-    fracdiff,
-    urca,
-    Rcatch22,
     slider,
-    tibble
+    generics
 RoxygenNote: 7.1.2
 Suggests: 
     tsibbledata,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    Rcatch22,
+    urca,
+    tseries,
+    fracdiff
 Config/testthat/edition: 3

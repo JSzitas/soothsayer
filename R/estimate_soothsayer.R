@@ -150,7 +150,7 @@ estimate_soothsayer <- function( .data, specials, ... ) {
     resolution = resolution[["precedence"]]
   )
 
-  models_to_fit <- aliases[matched_models]
+  models_to_fit <- purrr::compact(aliases[matched_models])
 
   if( specials[[".noestimate"]][[1]] ) {
     return( c(list(

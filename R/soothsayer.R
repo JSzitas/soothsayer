@@ -1,5 +1,4 @@
 train_soothsayer <- function(.data, specials, ...) {
-
   structure(
     estimate_soothsayer(.data, specials),
     class = "soothsayer"

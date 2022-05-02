@@ -105,7 +105,7 @@ rebuild_soothsayer <- function( new_mable ) {
   sooth_model <- new_mable[,which_soothsayers][[1]][[1]]
 
   mdls_to_use <- names(sooth_model[["fit"]][["fit_rules"]])
-  mdls_to_use <- new_mable[mdls_to_use]
+  mdls_to_use <- dplyr::select( new_mable, !!!mdls_to_use)
   .data <- sooth_model[["data"]]
 
   combiner <- sooth_model[["fit"]][["specials"]][["combiner"]]

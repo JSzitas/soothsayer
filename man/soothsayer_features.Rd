@@ -18,6 +18,12 @@
 \alias{arch_stat}
 \alias{spectral}
 \alias{catch22_feat}
+\alias{unitroot_ndiffs}
+\alias{feat_stl}
+\alias{unitroot_nsdiffs}
+\alias{shift_kl_max}
+\alias{shift_level_max}
+\alias{shift_var_max}
 \alias{positive}
 \alias{negative}
 \alias{zeros}
@@ -26,12 +32,6 @@
 \alias{period}
 \alias{tslength}
 \alias{boxcox_lambda}
-\alias{unitroot_ndiffs}
-\alias{feat_stl}
-\alias{unitroot_nsdiffs}
-\alias{shift_kl_max}
-\alias{shift_level_max}
-\alias{shift_var_max}
 \alias{soothsayer_feature_set}
 \title{Features used within soothsayer}
 \format{
@@ -70,6 +70,18 @@ spectral(x)
 
 catch22_feat(x)
 
+unitroot_ndiffs(x)
+
+feat_stl(x)
+
+unitroot_nsdiffs(x)
+
+shift_kl_max(x)
+
+shift_level_max(x)
+
+shift_var_max(x)
+
 positive(x)
 
 negative(x)
@@ -85,18 +97,6 @@ period(x)
 tslength(x)
 
 boxcox_lambda(x)
-
-unitroot_ndiffs(x)
-
-feat_stl(x)
-
-unitroot_nsdiffs(x)
-
-shift_kl_max(x)
-
-shift_level_max(x)
-
-shift_var_max(x)
 
 soothsayer_feature_set
 }

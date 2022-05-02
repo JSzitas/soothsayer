@@ -33,7 +33,7 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
 
     features <- suppressWarnings({
       dplyr::bind_rows(
-        furrr::future_map(features, transformer )
+        purrr::map(features, transformer )
         )
     })
     # the early return saves us an otherwise unnecessary else clause

@@ -57,27 +57,37 @@ stability <- function(x) {
 }
 #' @rdname soothsayer_features
 nonlinearity <- function(x) {
-  X2 <- tryCatch(tseries::terasvirta.test(stats::as.ts(x),
-                                          type = "Chisq")$statistic,
-    error = function(e) NA
-  )
-  c(.nonlinearity = 10 * unname(X2) / length(x))
+  if( requireNamespace("tseries") ) {
+    X2 <- tryCatch(tseries::terasvirta.test(stats::as.ts(x),
+                                            type = "Chisq")$statistic,
+                   error = function(e) NA
+    )
+    return(c(.nonlinearity = 10 * unname(X2) / length(x)))
+
+  }
+  NA
 }
 #' @rdname soothsayer_features
 hurst <- function(x) {
-  return(c(.hurst = suppressWarnings(fracdiff::fracdiff(
-    stats::as.ts(stats::na.contiguous(unlist(x))),
-    0, 0
-  )[["d"]] + 0.5)))
+  if(requireNamespace("fracdiff")) {
+    return(c(.hurst = suppressWarnings(fracdiff::fracdiff(
+      stats::as.ts(stats::na.contiguous(unlist(x))),
+      0, 0
+    )[["d"]] + 0.5)))
+  }
+  NA
 }
 #' @rdname soothsayer_features
 unitroot_pp <- function(x) {
-  result <- urca::ur.pp(x,
-    type = "Z-alpha",
-    model = "trend",
-    lags = "short"
-  )
-  c(.unitroot_pp = result@teststat)
+  if(requireNamespace("urca", quietly = TRUE)) {
+    result <- urca::ur.pp(x,
+                          type = "Z-alpha",
+                          model = "trend",
+                          lags = "short"
+    )
+    return(c(.unitroot_pp = result@teststat))
+  }
+  NA
 }
 #' @rdname soothsayer_features
 box_pierce <- function(x) {
@@ -90,8 +100,11 @@ box_pierce <- function(x) {
 #' @rdname soothsayer_features
 unitroot_kpss <- function (x)
 {
-  result <- urca::ur.kpss(x, type = "mu", lags = "short")
-  c(.unitroot_kpss = result@teststat)
+  if(requireNamespace("urca")) {
+    result <- urca::ur.kpss(x, type = "mu", lags = "short")
+    return(c(.unitroot_kpss = result@teststat))
+  }
+  NA
 }
 `%||%` <- function(x, y) {
   if (is.null(x)) {
@@ -212,77 +225,11 @@ spectral <- function (x)
 }
 #' @rdname soothsayer_features
 catch22_feat <- function( x ) {
-  res <- Rcatch22::catch22_all(x)
-  stats::setNames( res[["values"]], paste0(".",res[["names"]]))
-}
-#' @rdname soothsayer_features
-positive <- function(x) {
-  c(.positive = any(x > 0))
-}
-#' @rdname soothsayer_features
-negative <- function(x) {
-  c(.negative = any(x < 0))
-}
-#' @rdname soothsayer_features
-zeros <- function(x) {
-  c(.zeros = any(x == 0))
-}
-#' @rdname soothsayer_features
-continuous <- function( x ) {
-  c(.continuous = !is.logical(x) & !is.integer(x) & !is.character(x) & !is.factor(x))
-}
-#' @rdname soothsayer_features
-count <- function( x ) {
-  c( .count = isTRUE( all.equal( as.integer(x), x) ))
-}
-#' @rdname soothsayer_features
-period <- function(x)
-{
-  n <- length(x)
-  spec <- stats::spec.ar(c(x),plot=FALSE)
-  if(max(spec$spec)>10) # Arbitrary threshold chosen by trial and error.
-  {
-    period <- round(1/spec$freq[which.max(spec$spec)])
-    if(period==Inf) # Find next local maximum
-    {
-      j <- which(diff(spec$spec)>0)
-      if(length(j)>0)
-      {
-        nextmax <- j[1] + which.max(spec$spec[j[1]:500])
-        period <- round(1/spec$freq[nextmax])
-      }
-      else
-        period <- 1
-    }
+  if(requireNamespace("Rcatch22")) {
+    res <- Rcatch22::catch22_all(x)
+    return( stats::setNames( res[["values"]], paste0(".",res[["names"]])))
   }
-  else
-    period <- 1
-  c(.period = period)
-}
-#' @rdname soothsayer_features
-tslength <- function(x){
-  c(.length = length(x))
-}
-#' @rdname soothsayer_features
-# use guerreros algorithm to find best lambda
-boxcox_lambda <- function( x ) {
-  .period <- period(x)
-  # taken from feasts
-  lambda_coef_var <- function (lambda, x, .period = 2)
-  {
-    if (all(x == x[1]))
-      return(1)
-    x <- split(x, (seq_along(x) - 1)%/%.period)
-    mu_h <- sapply(x, mean, na.rm = TRUE)
-    sig_h <- sapply(x, stats::sd, na.rm = TRUE)
-    rat <- sig_h/mu_h^(1 - lambda)
-    stats::sd(rat, na.rm = TRUE)/mean(rat, na.rm = TRUE)
-  }
-  c(.boxcox_lambda_guerrero = stats::optimise(
-    lambda_coef_var,
-    c(-0.9, 2),
-    x = x,
-    .period = max(.period, 2))$minimum)
+  NA
 }
 #' @rdname soothsayer_features
 unitroot_ndiffs <- function( x ) {
@@ -517,6 +464,78 @@ shift_var_max <- function( x ) {
   }
   return(c(.shift_var_max = maxvar, .shift_var_index = maxidx))
 }
+
+#' @rdname soothsayer_features
+positive <- function(x) {
+  c(.positive = any(x > 0))
+}
+#' @rdname soothsayer_features
+negative <- function(x) {
+  c(.negative = any(x < 0))
+}
+#' @rdname soothsayer_features
+zeros <- function(x) {
+  c(.zeros = any(x == 0))
+}
+#' @rdname soothsayer_features
+continuous <- function( x ) {
+  c(.continuous = !is.logical(x) & !is.integer(x) & !is.character(x) & !is.factor(x))
+}
+#' @rdname soothsayer_features
+count <- function( x ) {
+  c( .count = isTRUE( all.equal( as.integer(x), x) ))
+}
+#' @rdname soothsayer_features
+period <- function(x)
+{
+  n <- length(x)
+  spec <- stats::spec.ar(c(x),plot=FALSE)
+  if(max(spec$spec)>10) # Arbitrary threshold chosen by trial and error.
+  {
+    period <- round(1/spec$freq[which.max(spec$spec)])
+    if(period==Inf) # Find next local maximum
+    {
+      j <- which(diff(spec$spec)>0)
+      if(length(j)>0)
+      {
+        nextmax <- j[1] + which.max(spec$spec[j[1]:500])
+        period <- round(1/spec$freq[nextmax])
+      }
+      else
+        period <- 1
+    }
+  }
+  else
+    period <- 1
+  c(.period = period)
+}
+#' @rdname soothsayer_features
+tslength <- function(x){
+  c(.length = length(x))
+}
+#' @rdname soothsayer_features
+# use guerreros algorithm to find best lambda
+boxcox_lambda <- function( x ) {
+  .period <- period(x)
+  # taken from feasts
+  lambda_coef_var <- function (lambda, x, .period = 2)
+  {
+    if (all(x == x[1]))
+      return(1)
+    x <- split(x, (seq_along(x) - 1)%/%.period)
+    mu_h <- sapply(x, mean, na.rm = TRUE)
+    sig_h <- sapply(x, stats::sd, na.rm = TRUE)
+    rat <- sig_h/mu_h^(1 - lambda)
+    stats::sd(rat, na.rm = TRUE)/mean(rat, na.rm = TRUE)
+  }
+  c(.boxcox_lambda_guerrero = stats::optimise(
+    lambda_coef_var,
+    c(-0.9, 2),
+    x = x,
+    .period = max(.period, 2))$minimum)
+}
+
+
 #' Features used within soothsayer
 #'
 #' @description All of the features in soothsayer - most taken from other sources,
