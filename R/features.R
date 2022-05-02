@@ -57,7 +57,7 @@ stability <- function(x) {
 }
 #' @rdname soothsayer_features
 nonlinearity <- function(x) {
-  if( requireNamespace("tseries") ) {
+  if( requireNamespace("tseries", quietly = TRUE) ) {
     X2 <- tryCatch(tseries::terasvirta.test(stats::as.ts(x),
                                             type = "Chisq")$statistic,
                    error = function(e) NA
@@ -69,7 +69,7 @@ nonlinearity <- function(x) {
 }
 #' @rdname soothsayer_features
 hurst <- function(x) {
-  if(requireNamespace("fracdiff")) {
+  if(requireNamespace("fracdiff",quietly = TRUE)) {
     return(c(.hurst = suppressWarnings(fracdiff::fracdiff(
       stats::as.ts(stats::na.contiguous(unlist(x))),
       0, 0
@@ -100,7 +100,7 @@ box_pierce <- function(x) {
 #' @rdname soothsayer_features
 unitroot_kpss <- function (x)
 {
-  if(requireNamespace("urca")) {
+  if(requireNamespace("urca", quietly = TRUE)) {
     result <- urca::ur.kpss(x, type = "mu", lags = "short")
     return(c(.unitroot_kpss = result@teststat))
   }
@@ -225,7 +225,7 @@ spectral <- function (x)
 }
 #' @rdname soothsayer_features
 catch22_feat <- function( x ) {
-  if(requireNamespace("Rcatch22")) {
+  if(requireNamespace("Rcatch22",quietly = TRUE)) {
     res <- Rcatch22::catch22_all(x)
     return( stats::setNames( res[["values"]], paste0(".",res[["names"]])))
   }
