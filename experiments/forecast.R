@@ -71,8 +71,7 @@ fit_models <- function( train,
   values_from <- tsibble::measured_vars(train)
   model_set <- purrr::map( models, ~ .x( !!rlang::sym(values_from))  )
 
-  mdls <- fabletools::model(train, !!!model_set, .safely = TRUE )
-  return( list( models = mdls))
+  fabletools::model(train, !!!model_set, .safely = TRUE )
 }
 
 forecast_models <- function( test,

@@ -35,7 +35,7 @@ snaive_oracle <- new_soothsayer_oracle(
 #
 #
 df <- tsibbledata::aus_livestock
-# df <- dplyr::filter( df, State == State[1] & Animal %in% unique(Animal)[1:3] )
+df <- dplyr::filter( df, State == State[1] & Animal %in% unique(Animal)[1:3] )
 train <- dplyr::filter(df , Month < tsibble::yearmonth("2017 Jan"))
 test <- dplyr::filter(df, Month > tsibble::yearmonth("2017 Jan"))
 
@@ -50,11 +50,18 @@ soothsayer <- soothsayer(Count ~ rules(
   ar ~ TRUE,
   ets ~ .length > 15
 ) + oracle(snaive_oracle) +
-  combiner(combiner_greedy_stacking))
+  combiner(combiner_greedy_stacking) +
+  model_aliases(arima = fable::ARIMA,
+                ar = fable::AR,
+                ets = fable::ETS)
+)
 
 soothsayer2 <- soothsayer(Count ~ rules(
   ets ~ .length > 15
-))
+) +
+  model_aliases(ets = fable::ETS)
+)
+
 
 fabletools::model(
   train,
@@ -65,7 +72,10 @@ fabletools::model(
     ar ~ TRUE,
     ets ~ .length > 15
   ) + oracle(snaive_oracle) +
-    combiner(combiner_greedy_stacking))
+    combiner(combiner_greedy_stacking) +
+    model_aliases(arima = fable::ARIMA,
+                  ar = fable::AR,
+                  ets = fable::ETS))
 ) -> fitted2
 
 add_soothsayer(fitted, soothsayer = soothsayer, sooth2 = soothsayer2) -> res

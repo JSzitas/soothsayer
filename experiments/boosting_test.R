@@ -20,8 +20,8 @@ fabletools::model(
   # ets = fable::ETS(count)
 ) -> fitted
 
-# fcst <- forecast( fitted, new_data = test )
-# gnrrt <- generate(fitted, h = 10)
+fcst <- forecast( fitted, new_data = test )
+gnrrt <- generate(fitted, h = 10)
 
 
 
