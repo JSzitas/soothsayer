@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+^local_data$
 ^data$
 .qs$
 ^experiment.*$

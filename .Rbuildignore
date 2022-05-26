@@ -4,5 +4,6 @@
 ^experiments$
 ^experiment.*$
 ^nonstandard_data$
+^local_data$
 ^LICENSE\.md$
 ^\.github$
