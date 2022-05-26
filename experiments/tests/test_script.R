@@ -90,7 +90,7 @@ fabletools::model(
 # train_acc <- fabletools::accuracy(fitted)
 
 # generated <- generate(fitted)
-# forecasted <- forecast(fitted, new_data = test)
+forecasted <- forecast(fitted, new_data = test)
 # fcst_acc <- fabletools::accuracy( forecasted, test )
 
 # library(fabletools)

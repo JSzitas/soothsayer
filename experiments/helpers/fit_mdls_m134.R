@@ -44,5 +44,11 @@ fitted_mdls <- fit_models( train, list( arima = fable::ARIMA,
                          bats = fable.tbats::BATS,
                          tbats = fable.tbats::TBATS) )
 
+qs::qsave(fitted_mdls, "mdls1.qs")
 
+qs::qread( "mdls1.qs" ) -> mdls
+
+fcsts <- fabletools::forecast( mdls, h = 14, times = 0 )
+
+qs::qsave( fcsts, "fcsts1.qs" )
 
