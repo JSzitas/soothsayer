@@ -1,13 +1,13 @@
-rmse <- function(true, predicted) {
+rmse_stack <- function(true, predicted) {
   sqrt(mean((stats::na.omit(true - predicted))^2))
 }
-mae <- function(true, predicted) {
+mae_stack <- function(true, predicted) {
   mean(abs(stats::na.omit(true - predicted)))
 }
 # greedy stacking of models, or determining model weights greedily using
 # arbitrary metrics
 # see: https://bmcresnotes.biomedcentral.com/articles/10.1186/s13104-020-4931-7
-greedy_stacking <- function(y, Z, metric = rmse, criterium_better = which.min, max_iter = 100) {
+greedy_stacking <- function(y, Z, metric = rmse_stack, criterium_better = which.min, max_iter = 100) {
   # s in the original paper
   step <- 0
   # x in the original paper

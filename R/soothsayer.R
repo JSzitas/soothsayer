@@ -29,7 +29,7 @@ specials_soothsayer <- fabletools::new_specials(
     }
     features
   },
-  combiner = function(combiner = combiner_equal, prior_weights = NULL, metric = rmse, ...) {
+  combiner = function(combiner = combiner_equal, prior_weights = NULL, metric = rmse_stack, ...) {
     purrr::partial(.f = combiner, prior_weights = prior_weights, metric = metric, ...)
   },
   resolution = function(model = "all", rule_vs_oracle = "both") {

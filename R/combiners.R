@@ -12,7 +12,7 @@
 #' and whatever weights they output.
 #' @export
 #' @rdname combiners
-combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rmse, oracle_weights = NULL, ... ) {
+combiner_greedy_stacking <- function(.models, prior_weights = NULL, metric = rmse_stack, oracle_weights = NULL, ... ) {
 
   Z <- purrr::map(.models, ~ fitted(.x[[1]]) )
   Z <- purrr::map(Z, as.data.frame)

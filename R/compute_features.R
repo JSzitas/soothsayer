@@ -25,16 +25,20 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
   if( length(tsibble::key_vars(x)) != 0) {
     features <- as.data.frame(x)
     features <- dplyr::group_by(features,  !!!tsibble::key(x) )
-    features <- dplyr::group_split(features)
+    features <- as.list(dplyr::group_split(features))
 
     keys <- as.data.frame(x)
     keys <- dplyr::select(keys, !!!tsibble::key(x))
     keys <- dplyr::distinct(keys)
+    # return(list(features, transformer))
+    features <- if(requireNamespace("furrr",quietly = TRUE)) {
+      furrr::future_map(features, transformer)
+    }else {
+      purrr::map(features, transformer)
+    }
 
     features <- suppressWarnings({
-      dplyr::bind_rows(
-        purrr::map(features, transformer )
-        )
+      dplyr::bind_rows(features)
     })
     # the early return saves us an otherwise unnecessary else clause
     return(cbind(keys, features))

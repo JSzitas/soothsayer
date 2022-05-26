@@ -1,6 +1,7 @@
 # nocov start
 #' @rdname soothsayer_features
 #' @param x A vector to apply measures to.
+#' @export
 entropy <- function(x) {
   spec <- try(stats::spec.ar(stats::na.contiguous(stats::as.ts(x)),
     plot = FALSE,
@@ -16,6 +17,7 @@ entropy <- function(x) {
   return(c(.entropy = entropy))
 }
 #' @rdname soothsayer_features
+#' @export
 lumpiness <- function(x) {
   width = ifelse(stats::frequency(x) > 1, stats::frequency(x), 10)
   x <- as.numeric(scale(as.matrix(x), center = TRUE, scale = TRUE))
@@ -36,6 +38,7 @@ lumpiness <- function(x) {
   return(c(.lumpiness = lumpiness))
 }
 #' @rdname soothsayer_features
+#' @export
 stability <- function(x) {
   width = ifelse(stats::frequency(x) > 1, stats::frequency(x), 10)
   x <- as.numeric(scale(x, center = TRUE, scale = TRUE))
@@ -56,6 +59,7 @@ stability <- function(x) {
   return(c(.stability = stability))
 }
 #' @rdname soothsayer_features
+#' @export
 nonlinearity <- function(x) {
   if( requireNamespace("tseries", quietly = TRUE) ) {
     X2 <- tryCatch(tseries::terasvirta.test(stats::as.ts(x),
@@ -68,6 +72,7 @@ nonlinearity <- function(x) {
   NA
 }
 #' @rdname soothsayer_features
+#' @export
 hurst <- function(x) {
   if(requireNamespace("fracdiff",quietly = TRUE)) {
     return(c(.hurst = suppressWarnings(fracdiff::fracdiff(
@@ -78,6 +83,7 @@ hurst <- function(x) {
   NA
 }
 #' @rdname soothsayer_features
+#' @export
 unitroot_pp <- function(x) {
   if(requireNamespace("urca", quietly = TRUE)) {
     result <- urca::ur.pp(x,
@@ -90,6 +96,7 @@ unitroot_pp <- function(x) {
   NA
 }
 #' @rdname soothsayer_features
+#' @export
 box_pierce <- function(x) {
   out <- stats::Box.test(x,
     lag = 1, type = "Box-Pierce",
@@ -98,6 +105,7 @@ box_pierce <- function(x) {
   c(.box_pierce = unname(out$statistic))
 }
 #' @rdname soothsayer_features
+#' @export
 unitroot_kpss <- function (x)
 {
   if(requireNamespace("urca", quietly = TRUE)) {
@@ -114,6 +122,7 @@ unitroot_kpss <- function (x)
   }
 }
 #' @rdname soothsayer_features
+#' @export
 longest_flat_spot <- function (x)
 {
   cutx <- cut(x, breaks = 10, include.lowest = TRUE, labels = FALSE)
@@ -121,6 +130,7 @@ longest_flat_spot <- function (x)
   return(c(.longest_flat_spot = max(rlex$lengths)))
 }
 #' @rdname soothsayer_features
+#' @export
 n_crossing_points <- function (x)
 {
   midline <- stats::median(x, na.rm = TRUE)
@@ -132,6 +142,7 @@ n_crossing_points <- function (x)
   c(.n_crossing_points = sum(cross, na.rm = TRUE))
 }
 #' @rdname soothsayer_features
+#' @export
 ljung_box <- function (x)
 {
   lag = 1
@@ -141,6 +152,7 @@ ljung_box <- function (x)
   c(.ljung_box = unname(out$statistic))
 }
 #' @rdname soothsayer_features
+#' @export
 acf_features <- function(x) {
   period <- period(x)
   lag_max <- max( period, 10L)
@@ -168,6 +180,7 @@ acf_features <- function(x) {
   return(output)
 }
 #' @rdname soothsayer_features
+#' @export
 intermittent <- function(x) {
   rle <- rle(x)
   nonzero <- x[x != 0]
@@ -191,6 +204,7 @@ intermittent <- function(x) {
   })
 }
 #' @rdname soothsayer_features
+#' @export
 arch_stat <- function (x)
 {
   if (length(x) <= 13) {
@@ -204,6 +218,7 @@ arch_stat <- function (x)
   c( .arch_stat = if (is.nan(arch_stat)) 1 else arch_stat)
 }
 #' @rdname soothsayer_features
+#' @export
 spectral <- function (x)
 {
   period <- period(x)
@@ -224,6 +239,7 @@ spectral <- function (x)
   return(c(.spectral = entropy))
 }
 #' @rdname soothsayer_features
+#' @export
 catch22_feat <- function( x ) {
   if(requireNamespace("Rcatch22",quietly = TRUE)) {
     res <- Rcatch22::catch22_all(x)
@@ -232,6 +248,7 @@ catch22_feat <- function( x ) {
   NA
 }
 #' @rdname soothsayer_features
+#' @export
 unitroot_ndiffs <- function( x ) {
   differences <- 0:3
   diff <- function(x, differences) {
@@ -293,6 +310,7 @@ estimate_stl <- function (y, trend.args, season.args, lowpass.args, iterations =
         season_adjust = deseas)
 }
 #' @rdname soothsayer_features
+#' @export
 feat_stl <- function( x ) {
   .period <- period(x)
   s.window <- 11
@@ -359,6 +377,7 @@ feat_stl <- function( x ) {
      .stl_e_acf10 = sum((acf_resid[2L:11L])^2))
 }
  #' @rdname soothsayer_features
+ #' @export
 unitroot_nsdiffs <- function( x ) {
 
   .period <- period(x)
@@ -385,6 +404,7 @@ unitroot_nsdiffs <- function( x ) {
   c(.nsdiffs = max(differences[c(TRUE, keep)], na.rm = TRUE))
 }
 #' @rdname soothsayer_features
+#' @export
 shift_kl_max <- function( x ) {
   .period <- period(x)
   .size <- ifelse(.period == 1, 10, .period)
@@ -421,6 +441,7 @@ shift_kl_max <- function( x ) {
   return(c(.shift_kl_max = max(diffkl, na.rm = TRUE), .shift_kl_index = maxidx))
 }
 #' @rdname soothsayer_features
+#' @export
 shift_level_max <- function( x ) {
   .period <- period(x)
   .size <- ifelse(.period == 1, 10, .period)
@@ -443,6 +464,7 @@ shift_level_max <- function( x ) {
   return(c(.shift_level_max = maxmeans, .shift_level_index = maxidx))
 }
 #' @rdname soothsayer_features
+#' @export
 shift_var_max <- function( x ) {
   .period <- period(x)
   .size <- ifelse(.period == 1, 10, .period)
@@ -464,28 +486,33 @@ shift_var_max <- function( x ) {
   }
   return(c(.shift_var_max = maxvar, .shift_var_index = maxidx))
 }
-
 #' @rdname soothsayer_features
+#' @export
 positive <- function(x) {
   c(.positive = any(x > 0))
 }
 #' @rdname soothsayer_features
+#' @export
 negative <- function(x) {
   c(.negative = any(x < 0))
 }
 #' @rdname soothsayer_features
+#' @export
 zeros <- function(x) {
   c(.zeros = any(x == 0))
 }
 #' @rdname soothsayer_features
+#' @export
 continuous <- function( x ) {
   c(.continuous = !is.logical(x) & !is.integer(x) & !is.character(x) & !is.factor(x))
 }
 #' @rdname soothsayer_features
+#' @export
 count <- function( x ) {
   c( .count = isTRUE( all.equal( as.integer(x), x) ))
 }
 #' @rdname soothsayer_features
+#' @export
 period <- function(x)
 {
   n <- length(x)
@@ -510,10 +537,12 @@ period <- function(x)
   c(.period = period)
 }
 #' @rdname soothsayer_features
+#' @export
 tslength <- function(x){
   c(.length = length(x))
 }
 #' @rdname soothsayer_features
+#' @export
 # use guerreros algorithm to find best lambda
 boxcox_lambda <- function( x ) {
   .period <- period(x)
@@ -535,12 +564,12 @@ boxcox_lambda <- function( x ) {
     .period = max(.period, 2))$minimum)
 }
 
-
 #' Features used within soothsayer
 #'
 #' @description All of the features in soothsayer - most taken from other sources,
 #' see **details**
 #' @rdname soothsayer_features
+#' @export
 soothsayer_feature_set <- list( entropy,
                                 lumpiness,
                                 nonlinearity,
