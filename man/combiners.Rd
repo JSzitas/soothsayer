@@ -12,7 +12,7 @@
 combiner_greedy_stacking(
   .models,
   prior_weights = NULL,
-  metric = rmse,
+  metric = rmse_stack,
   oracle_weights = NULL,
   ...
 )

@@ -1,7 +1,7 @@
 Package: soothsayer
 Type: Package
 Title: Tidy Time Series Forecast Model Selection
-Version: 0.6.1
+Version: 0.6.2
 Author: Juraj Szitas
 Maintainer: Juraj Szitas <szitas.juraj13@gmail.com>
 Description: More about what it does (maybe more than one line)
@@ -20,6 +20,8 @@ Imports:
     tsibble,
     fable,
     distributional,
+    tidyselect,
+    data.table,
     slider,
     generics
 RoxygenNote: 7.1.2
@@ -29,5 +31,6 @@ Suggests:
     Rcatch22,
     urca,
     tseries,
-    fracdiff
+    fracdiff,
+    furrr
 Config/testthat/edition: 3
