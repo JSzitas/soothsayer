@@ -14,16 +14,24 @@ test <- dplyr::filter( ex_data, Month > tsibble::yearmonth("2017 Jan") )
 
 fabletools::model(
   train,
-  ar = fable::AR(Lambs ~ order(0) + 1 + Sheep),
+  arima = fable::ARIMA(Lambs),
+  # ar = fable::AR(Lambs ~ order(0) + 1 + Sheep),
   soothsayer = soothsayer(Lambs ~ rules(
     arima ~ .length > 12,
-    ar ~ TRUE
+    ets ~ TRUE,
+    # ar ~ TRUE,
+    theta ~ TRUE
   ) +
     model_aliases(
-      ar = fix_model_parameters(fable::AR, order(0:3) + 1 + Sheep),
-      arima = fable::ARIMA) +
+      # ar = fix_model_parameters(fable::AR, order(0:3) + 1 + Sheep),
+      ets = fable::ETS,
+      arima = fable::ARIMA,
+      theta = fable::THETA) +
     combiner(combiner_greedy_stacking) +
     Sheep )
 ) -> fitted
+
+fcsts <- forecast( fitted, test )
+gens <- generate( fitted, test, bootstrap = TRUE, times = 5 )
 
 

@@ -23,6 +23,8 @@ full_tbl <- tbl %>%
   dplyr::rename_with( .fn = ~paste0("target_",.x) ) %>%
   dplyr::rename(key = target_key)
 
+
+
 top_5 <- tbl %>%
   dplyr::mutate( weight = 1/RMSSE ) %>%
   dplyr::mutate( rank = dplyr::min_rank(weight) ) %>%
@@ -37,6 +39,12 @@ top_5 <- tbl %>%
   dplyr::rename_with( .fn = ~paste0("target_",.x) ) %>%
   dplyr::rename(key = target_key)
 
+best <- tbl %>%
+  dplyr::mutate( weight = 1/RMSSE ) %>%
+  dplyr::mutate( rank = dplyr::min_rank(weight) ) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter( rank == 1 ) %>%
+  dplyr::select( key, .model)
 
 qs::qsave( dplyr::full_join( full_tbl, features, by = c("key") ),
            "oracle_weighed.qs")
@@ -45,7 +53,8 @@ qs::qsave( dplyr::full_join( top_5,
                              features, by = c("key") ),
            "oracle_weighed_top_5.qs")
 
-
+qs::qsave(  dplyr::full_join( best, features, by = c("key") ),
+            "oracle_best.qs" )
 
 # ignore individual forecast hs for now
 

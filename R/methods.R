@@ -7,8 +7,10 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
   names(weights) <- names(x[["model_fits"]])
   generated_distrs <- purrr::imap( x[["model_fits"]],
                                    function(model, name) {
+                                     safe_gen <- purrr::possibly(generate,
+                                                                 otherwise = data.frame( .sim = NA))
                                      dplyr::bind_cols(
-                                       generate(
+                                       safe_gen(
                                          model[[1]],
                                          new_data = new_data,
                                          h = h,
@@ -18,17 +20,31 @@ generate.soothsayer <- function (x, new_data = NULL, h = NULL, specials = NULL, 
                                          ...),
                                        model = name)
                                    })
+  # check weight consistency - not all methods implement the generate() function
+  valid_dists <- purrr::map_lgl( generated_distrs, ~ !all(is.na(.x[[".sim"]])) )
+
+  if( !all(valid_dists) ) {
+    warning(paste0("Generation failed for following models:\n",
+                   paste0(names(x[["model_fits"]][!valid_dists]), collapse = ", "),
+                   "\nThese models will be ignored when creating combined samples."
+                   )
+            )
+  }
+  # recompute weights
+  weights <- weights[ valid_dists ]/sum(weights[valid_dists])
+  generated_distrs <- generated_distrs[valid_dists]
+
   dists <- purrr::imap( generated_distrs, function(dist, name) {
     dists <- dplyr::mutate(dist, .sim = .data$.sim * weights[name])
     tsibble::as_tibble(dists)
   })
   # have to group by first column - which is, happily, the time index variable
   index_var <- as.name(names(dists[[1]])[1])
-  dists <- dplyr::group_by( dplyr::bind_rows(dists), !!index_var)
+  dists <- dplyr::group_by( dplyr::bind_rows(dists), !!index_var, .data$.rep)
   dists <- dplyr::summarise( dists,
                              .sim = sum(.data$.sim),
-                             .rep = unique(.data$.rep))
-  tsibble::as_tsibble(dists, index = names(dists)[1])
+                             .groups = "keep")
+  tsibble::tsibble( dists, index = rlang::as_string(index_var), key = c(.data$.rep))
 }
 # to be fair, this is a method over a fable, but I do not want to write a generic for it
 get_distribution <- function(x) {
@@ -36,7 +52,6 @@ get_distribution <- function(x) {
   distr <- names(distr)[ which(distr) ]
   c(x[,distr])
 }
-
 #' @importFrom fabletools forecast
 #' @export
 forecast.soothsayer <- function( object,
@@ -50,8 +65,8 @@ forecast.soothsayer <- function( object,
                 fcst <- fabletools::forecast(
                   .x[[1]],
                   new_data = new_data,
-                  bootstrap = bootstrap,
-                  times = times,
+                  bootstrap = FALSE,
+                  times = 0,
                   ...)
                   get_distribution(fcst)
                 }
@@ -67,12 +82,6 @@ forecast.soothsayer <- function( object,
   fcst_means <- as.matrix(dplyr::bind_cols(fcst_means))
   # and compute the final mean
   fcst_means <- c( fcst_means %*% weights )
-  # also get forecast variances
-
-  # I am quite unsure at this point that computing the variances is very sensible
-  # for non-normal distributions its bad, but even for normal distributions... there is
-  # no guarantee that the end result is normal. if its bimodal... then we are a bit
-  # screwed either way. lets not do that.
   distributional::dist_degenerate( fcst_means )
 }
 #' @importFrom stats residuals
