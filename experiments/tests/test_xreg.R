@@ -17,10 +17,10 @@ fabletools::model(
   arima = fable::ARIMA(Lambs),
   # ar = fable::AR(Lambs ~ order(0) + 1 + Sheep),
   soothsayer = soothsayer(Lambs ~ rules(
-    arima ~ .length > 12,
-    ets ~ TRUE,
+    arima ~ .length > 12#,
+    # ets ~ TRUE,
     # ar ~ TRUE,
-    theta ~ TRUE
+    # theta ~ TRUE
   ) +
     model_aliases(
       # ar = fix_model_parameters(fable::AR, order(0:3) + 1 + Sheep),
