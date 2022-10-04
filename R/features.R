@@ -225,7 +225,7 @@ spectral <- function (x)
   spec <- try(stats::spec.ar(na.contiguous(stats::ts(x, frequency = period)),
                              plot = FALSE, method = "burg", n.freq = ceiling(length(x)/2 +
                                                                                1)))
-  if (class(spec) == "try-error") {
+  if (inherits(spec, "try-error")) {
     entropy <- NA
   }
   else {

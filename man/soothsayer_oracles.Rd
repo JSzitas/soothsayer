@@ -8,8 +8,10 @@
 new_soothsayer_oracle(
   oracle_name = NULL,
   trained_oracle = NULL,
-  predict = function(...) {    
-    rlang::abort("This oracle must have a prediction method.") },
+  predict = function(...) {
+    
+    rlang::abort("This oracle must have a prediction method.")
+ },
   emits = "models",
   ...
 )
