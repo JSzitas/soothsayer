@@ -77,20 +77,39 @@ ex_data <- tsibbledata::aus_livestock %>%
   dplyr::ungroup() %>%
   tsibble::as_tsibble(index = "Month", key= "State")
 
-train <- dplyr::filter(ex_data, Month < tsibble::yearmonth("2017 Jan"))
+train <- dplyr::filter(ex_data, Month <= tsibble::yearmonth("2017 Jan"))
 test <- dplyr::filter( ex_data, Month > tsibble::yearmonth("2017 Jan") )
+
+snaive_oracle <- new_soothsayer_oracle(
+  oracle_name = "snaive_oracle",
+  predict = function(oracle, features) {
+    "snaive"
+  }
+)
 
 fabletools::model(
   train,
   ar = fable::ARIMA( count ),
   arima = fable::ARIMA(count),
-  ets = fable::ETS(count)
+  ets = fable::ETS(count),
+  soothsayer = soothsayer(count ~ rules(
+    arima ~ .length > 12,
+    ar ~ TRUE,
+    ets ~ .length > 15
+  ) + oracle(snaive_oracle) +
+    combiner(combiner_greedy_stacking) +
+    model_aliases(arima = fable::ARIMA,
+                  ar = fable::AR,
+                  ets = fable::ETS))
 ) -> fitted
 
 # train_acc <- fabletools::accuracy(fitted)
 
 # generated <- generate(fitted)
 forecasted <- forecast(fitted, new_data = test)
+
+forecasted2 <- forecast(fitted)
+
 # fcst_acc <- fabletools::accuracy( forecasted, test )
 
 # library(fabletools)

@@ -9,7 +9,7 @@ ex_data <- tsibbledata::aus_livestock %>%
   tidyr::pivot_wider( names_from = "Animal", values_from = "count" ) %>%
   tsibble::as_tsibble(index = "Month")
 
-train <- dplyr::filter(ex_data, Month < tsibble::yearmonth("2017 Jan"))
+train <- dplyr::filter(ex_data, Month <= tsibble::yearmonth("2017 Jan"))
 test <- dplyr::filter( ex_data, Month > tsibble::yearmonth("2017 Jan") )
 
 fabletools::model(

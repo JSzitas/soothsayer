@@ -36,7 +36,7 @@ snaive_oracle <- new_soothsayer_oracle(
 #
 df <- tsibbledata::aus_livestock
 df <- dplyr::filter( df, State == State[1] & Animal %in% unique(Animal)[1:3] )
-train <- dplyr::filter(df , Month < tsibble::yearmonth("2017 Jan"))
+train <- dplyr::filter(df , Month <= tsibble::yearmonth("2017 Jan"))
 test <- dplyr::filter(df, Month > tsibble::yearmonth("2017 Jan"))
 
 fabletools::model(
