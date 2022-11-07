@@ -89,14 +89,14 @@ snaive_oracle <- new_soothsayer_oracle(
 
 fabletools::model(
   train,
-  ar = fable::ARIMA( count ),
+  # ar = fable::ARIMA( count ),
   arima = fable::ARIMA(count),
-  ets = fable::ETS(count),
+  # ets = fable::ETS(count),
   soothsayer = soothsayer(count ~ rules(
     arima ~ .length > 12,
     ar ~ TRUE,
     ets ~ .length > 15
-  ) + oracle(snaive_oracle) +
+  ) + #oracle(snaive_oracle) +
     combiner(combiner_greedy_stacking) +
     model_aliases(arima = fable::ARIMA,
                   ar = fable::AR,
