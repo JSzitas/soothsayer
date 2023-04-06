@@ -57,7 +57,12 @@ compute_features.tbl_ts <- function( x, feature_set = soothsayer_feature_set, va
 # and cleanliness, we already have it separated out
 generate_feature_transformer <- function( feature_set, values_from ) {
   # just a wrapper so that the functions return NaN rather than a random error
-  safe_set <- purrr::map( feature_set, ~ purrr::possibly(.f = .x, otherwise = NaN)  )
+  safe_set <- purrr::map( feature_set, function(i) {
+    if(is.null(i)) {
+      return(function(i){return(c(nan_feat = NaN))})
+    }
+    purrr::possibly(.f = i, otherwise = NaN)
+  })
   # then we generate a closure which specifies what we will be calculating -
   # this also enables as to easily use future_map
   transformer <- function( .x ) {

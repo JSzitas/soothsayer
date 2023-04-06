@@ -13,7 +13,7 @@ specials_soothsayer <- fabletools::new_specials(
     }
     return(rules)
   },
-  oracle = function(trained_oracle = random_oracle) {
+  oracle = function(trained_oracle = NULL) {
     return(trained_oracle)
   },
   model_aliases = function(...) {
