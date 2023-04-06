@@ -77,6 +77,10 @@ forecast.soothsayer <- function( object,
   }
   # otherwise, get weights
   weights <- object[["model_weights"]]
+  # select only non-null models
+  valid_fcsts <- which(purrr::map_lgl(fcsts, ~!all(is.na(unlist(.x)))))
+  fcsts <- fcsts[valid_fcsts]
+  weights <- weights[valid_fcsts]
   # get forecast means
   fcst_means <- purrr::map(fcsts,  ~mean(.x[[1]]) )
   fcst_means <- as.matrix(dplyr::bind_cols(fcst_means))

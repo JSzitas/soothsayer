@@ -182,7 +182,10 @@ estimate_soothsayer <- function( .data, specials, ... ) {
     weighed_fits <- purrr::map2(
       fitted_vals, model_weights,
       function(fit, weight) {
-        fit * weight
+        if( length(fit) > 0 && !all(is.na(fit)) && !is.null(fit) ) {
+          return(fit * weight)
+        }
+        return(0)
       }
     )
     fit_val <- purrr::reduce( weighed_fits, .f = `+` )
