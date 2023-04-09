@@ -241,7 +241,7 @@ spectral <- function (x)
 #' @rdname soothsayer_features
 #' @export
 catch22_feat <- function( x ) {
-  if(requireNamespace("Rcatch22",quietly = TRUE)) {
+  if(requireNamespace("Rcatch22",quietly = TRUE) && length(x) > 10) {
     res <- Rcatch22::catch22_all(x)
     return( stats::setNames( res[["values"]], paste0(".",res[["names"]])))
   }
