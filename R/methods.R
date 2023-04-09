@@ -59,6 +59,7 @@ forecast.soothsayer <- function( object,
                                  specials = NULL,
                                  bootstrap = FALSE,
                                  times = 100,
+                                 reconcile_sd = c("weighed_sd", "extreme"),
                                  ... ) {
   fcsts <- purrr::map( object[["model_fits"]],
               function(.x) {
@@ -73,6 +74,7 @@ forecast.soothsayer <- function( object,
   )
   # if we only have one model, dont worry about anything else :)
   if( length(object[["model_fits"]]) == 1 ) {
+    if(is.null(fcsts[[1]][[1]]))
     return(fcsts[[1]][[1]])
   }
   # otherwise, get weights
@@ -81,12 +83,30 @@ forecast.soothsayer <- function( object,
   valid_fcsts <- which(purrr::map_lgl(fcsts, ~!all(is.na(unlist(.x)))))
   fcsts <- fcsts[valid_fcsts]
   weights <- weights[valid_fcsts]
+  # if no valid forecast possible
+  if( length(fcsts) == 0 ) {
+    return(distributional::dist_degenerate(rep(NA, nrow(new_data))))
+  }
   # get forecast means
   fcst_means <- purrr::map(fcsts,  ~mean(.x[[1]]) )
   fcst_means <- as.matrix(dplyr::bind_cols(fcst_means))
   # and compute the final mean
   fcst_means <- c( fcst_means %*% weights )
-  distributional::dist_degenerate( fcst_means )
+  # get forecast sds
+  fcst_sds <- purrr::map(fcsts,  ~sqrt(distributional::variance(.x[[1]])) )
+  fcst_sds <- as.matrix(dplyr::bind_cols(fcst_sds))
+  if(match.arg(reconcile_sd) == "weighed_sd") {
+    fcst_sds <- c( fcst_sds %*% weights)
+  }
+  else if(match.arg(reconcile_sd) == "extreme") {
+    # fccc <<- fcst_sds
+    fcst_sds <- apply(fcst_sds, 1, max)
+  }
+  else {
+    # return output without sds
+    return(distributional::dist_degenerate( fcst_means ))
+  }
+  distributional::dist_normal( fcst_means, fcst_sds )
 }
 #' @importFrom stats residuals
 #' @export
