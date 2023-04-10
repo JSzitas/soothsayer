@@ -67,6 +67,7 @@ combiner_lm <- function(.models, prior_weights = NULL, oracle_weights = NULL, ..
   colMeans( rbind( weights, prior_weights))
 }
 #' @rdname combiners
+#' @export
 # See 'Zou, Yang (2004) "Combining time series models for forecasting"'
 # also at https://github.com/ykang/kllab-seminars/blob/master/2019_S2/20191018/
 # Zou%20and%20Yang%202004%20-%20Combining%20time%20series%20models%20for%20forecasting.pdf
@@ -76,16 +77,41 @@ combiner_after <- function(.models, prior_weights = NULL, ... ) {
   Z <- purrr::map(Z, ~ .x[[".fitted"]] )
   Z <- as.matrix(dplyr::bind_cols(Z))
 
+  # this currently only supports these models
+  models_used <- purrr::map_chr(.models, ~ class(.x[[1]][[1]]))
+  supported_models <- c("ARIMA", "AR", "ETS",
+                        "RW", "croston", "model_mean",
+                        "fable_theta", "NNETAR", "TBATS", "BATS")
+  if( !all(models_used %in% supported_models)) {
+    msg = paste0("The 'AFTER' combiner (**combiner_after**) is not supported ",
+                 "for models: ",
+                 setdiff(models_used, supported_models))
+    stop(msg)
+  }
+  sigmas <- c(fabletools::glance(.models)$sigma2)
+
+  if( "ETS" %in% models_used ) {
+    ets_index <- which(models_used == "ETS")
+    # recompute sigma for ets
+    ets_fit <- .models[[ets_index]][[1]][["fit"]]
+    n_pars <- length(ets_fit[["par"]][["term"]])
+    n_ets <- nrow(ets_fit[["est"]])
+    target <- tsibble::measured_vars(ets_fit[["est"]])[1]
+
+    sigmas[ets_index] <-
+      (sum((ets_fit[["est"]][[target]] - ets_fit[["est"]][[".fitted"]])^2)/
+         (n_ets-n_pars))
+  }
+
   y <- .models[[1]][[1]][["data"]]
   measured_var <- tsibble::measured_vars(y)
   y <- y[[measured_var]]
+  # create residuals for all models
+  resid <- (Z - y)^2
 
+  weights <- -1/2 * colSums(t(t(resid)/sigmas), na.rm = TRUE)
+  weights <- exp(weights) * sqrt(sigmas)
+  # normalize
+  weights/sum(weights)
 }
 
-AFTER <- function(x )  {
-  x
-}
-
-roll_variance <- function(x) {
-  x
-}

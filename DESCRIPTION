@@ -1,7 +1,7 @@
 Package: soothsayer
 Type: Package
 Title: Tidy Time Series Forecast Model Selection
-Version: 0.6.7
+Version: 0.6.8
 Author: Juraj Szitas
 Maintainer: Juraj Szitas <szitas.juraj13@gmail.com>
 Description: More about what it does (maybe more than one line)
