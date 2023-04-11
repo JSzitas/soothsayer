@@ -36,9 +36,6 @@ following is perfectly valid and runnable code:
 ``` r
 library(fabletools)
 library(soothsayer)
-#> Registered S3 method overwritten by 'quantmod':
-#>   method            from
-#>   as.zoo.data.frame zoo
 
 ex_data <- tsibbledata::aus_livestock %>%
   as.data.frame() %>%
@@ -64,6 +61,9 @@ mdls <- fabletools::model(
                                   # only fit ets if length is over 15
                                   ets ~ .length > 15))
 )
+#> Registered S3 method overwritten by 'quantmod':
+#>   method            from
+#>   as.zoo.data.frame zoo
 ```
 
 Note that this works seamlessly with fitting any model in the **fable**
@@ -103,8 +103,6 @@ mdls <- fabletools::model(
                             # note the explicit combiner, though
                             combiner(combiner_equal))
 )
-#> Warning: 8 errors (1 unique) encountered for soothsayer
-#> [8] object 'combiner_equal' not found
 ```
 
 However, multiple combiners are implemented within the package - a good
